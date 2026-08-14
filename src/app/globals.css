@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fondo: #f6f7f9;
+  --color-tinta: #16202c;
+  --color-acento: #1d4ed8;
+  --color-borde: #dfe3ea;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  -webkit-text-size-adjust: 100%;
+}
+
+/*
+ * Clases propias del proyecto.
+ *
+ * En Tailwind v4 `@apply` sólo acepta utilidades, no otras clases propias:
+ * por eso cada botón repite el juego base en vez de componerse sobre `.boton`.
+ */
+@layer components {
+  .campo {
+    @apply w-full rounded-md border border-[var(--color-borde)] bg-white px-2 py-2
+           text-sm outline-none focus:border-[var(--color-acento)]
+           focus:ring-2 focus:ring-blue-200;
+  }
+
+  .boton {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+           text-sm font-medium transition disabled:cursor-not-allowed
+           disabled:opacity-50;
+  }
+
+  .boton-primario {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+           text-sm font-medium transition disabled:cursor-not-allowed
+           disabled:opacity-50 bg-[var(--color-acento)] text-white
+           hover:bg-blue-700;
+  }
+
+  .boton-secundario {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
+           text-sm font-medium transition disabled:cursor-not-allowed
+           disabled:opacity-50 border border-[var(--color-borde)] bg-white
+           hover:bg-slate-50;
+  }
+
+  .tarjeta {
+    @apply rounded-xl border border-[var(--color-borde)] bg-white shadow-sm;
+  }
+}

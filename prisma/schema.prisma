@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Estado del procesamiento de una foto de planilla.
+enum EstadoPlanilla {
+  PROCESANDO
+  EN_REVISION
+  CONFIRMADA
+  ERROR
+}
+
+/// Una foto de planilla manuscrita. Cada carga genera una fila nueva:
+/// nunca se sobrescribe, así se acumula el histórico de todos los días.
+model Planilla {
+  id        String         @id @default(cuid())
+  estado    EstadoPlanilla @default(PROCESANDO)
+
+  // Archivo original, para poder auditar contra la foto.
+  archivoNombre String
+  archivoTipo   String
+  archivoRuta   String
+
+  // Encabezado de la planilla. Sirve de valor por defecto para las filas
+  // cuando el dato figura una sola vez arriba y no se repite por reclamo.
+  fecha     DateTime?
+  oficial   String?
+  chofer    String?
+  movil     String?
+  localidad String?
+
+  // Trazabilidad de la extracción con IA.
+  modelo         String?
+  respuestaCruda Json?
+  notasIa        String?
+  error          String?
+
+  reclamos Reclamo[]
+
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+  confirmadoEn  DateTime?
+
+  @@index([creadoEn])
+  @@index([estado])
+  @@map("planillas")
+}
+
+/// Una fila de la planilla: un reclamo atendido.
+model Reclamo {
+  id         String   @id @default(cuid())
+  planillaId String
+  planilla   Planilla @relation(fields: [planillaId], references: [id], onDelete: Cascade)
+
+  /// Orden de la fila dentro de la planilla, para conservar la lectura original.
+  orden Int
+
+  fecha        DateTime?
+  oficial      String?
+  chofer       String?
+  movil        String?
+  localidad    String?
+  tipoReclamo  String?
+  fechaIngreso DateTime?
+  nroIncidente String?
+  calle        String?
+  numero       String?
+  observaciones String?
+
+  /// Qué tan segura estuvo la IA de esta fila: alta | media | baja.
+  confianza String?
+  /// Marca si una persona revisó y corrigió la fila a mano.
+  revisado  Boolean @default(false)
+
+  materiales ReclamoMaterial[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@index([planillaId, orden])
+  @@index([fecha])
+  @@index([nroIncidente])
+  @@map("reclamos")
+}
+
+/// Catálogo de columnas de materiales de la planilla. Es configurable:
+/// las columnas que la IA lee y todavía no existen se dan de alta solas.
+model Material {
+  id     String  @id @default(cuid())
+  nombre String  @unique
+  /// Grupo de la planilla: "Lámparas", "Balastos" u "Otros materiales".
+  grupo  String?
+  unidad String?
+  orden  Int     @default(0)
+  activo Boolean @default(true)
+
+  reclamos ReclamoMaterial[]
+
+  creadoEn DateTime @default(now())
+
+  @@index([orden])
+  @@index([grupo])
+  @@map("materiales")
+}
+
+/// La X (o la cantidad) de una columna de materiales en una fila concreta.
+model ReclamoMaterial {
+  id         String  @id @default(cuid())
+  reclamoId  String
+  reclamo    Reclamo @relation(fields: [reclamoId], references: [id], onDelete: Cascade)
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  /// Cantidad escrita en la celda. Si sólo había una X, vale 1.
+  cantidad Float @default(1)
+
+  @@unique([reclamoId, materialId])
+  @@index([materialId])
+  @@map("reclamo_materiales")
+}

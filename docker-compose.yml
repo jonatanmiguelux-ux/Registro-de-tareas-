@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: registro-tareas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: registro
+      POSTGRES_PASSWORD: registro
+      POSTGRES_DB: registro_tareas
+    # 5433 en el host: el 5432 suele estar tomado por otro Postgres local.
+    ports:
+      - "5433:5432"
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registro -d registro_tareas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  datos:
