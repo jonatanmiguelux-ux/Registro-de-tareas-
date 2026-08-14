@@ -72,6 +72,11 @@ model Reclamo {
   numero       String?
   observaciones String?
 
+  /// Qué se encontró o se hizo: "Cable Cortado", "Falso Contacto", "Funciona
+  /// Normal". En el papel se escribe como sigla (C/C, F/C, F/N) en la misma
+  /// zona que los materiales, pero no es un material: no consume stock.
+  diagnostico String?
+
   /// Qué tan segura estuvo la IA de esta fila: alta | media | baja.
   confianza String?
   /// Marca si una persona revisó y corrigió la fila a mano.
@@ -98,6 +103,15 @@ model Material {
   unidad String?
   orden  Int     @default(0)
   activo Boolean @default(true)
+
+  /// Si tiene una columna propia impresa en la planilla.
+  ///
+  /// Los que no la tienen (el Adaptador, que se anota "AD" a mano al lado de
+  /// la lámpara) son materiales de pleno derecho y consumen stock, pero no
+  /// deben entrar en la lista ordenada de columnas que se le pasa al modelo
+  /// como referencia: esa lista sirve para contar casilleros, y un nombre de
+  /// más ahí corre todas las marcas siguientes.
+  columnaImpresa Boolean @default(true)
 
   /// Punto de partida del stock. Es un valor que se corrige, no un movimiento:
   /// volver a cargarlo reemplaza el anterior en vez de sumarse.

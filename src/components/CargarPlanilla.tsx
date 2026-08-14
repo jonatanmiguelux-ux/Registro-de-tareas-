@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { encolar, hayCola } from "@/lib/cola";
 
 export function CargarPlanilla() {
   const router = useRouter();
@@ -12,11 +13,13 @@ export function CargarPlanilla() {
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
   const [analizando, setAnalizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [guardada, setGuardada] = useState(false);
 
   function elegir(lista: FileList | null) {
     const elegido = lista?.[0];
     if (!elegido) return;
     setError(null);
+    setGuardada(false);
     setArchivo(elegido);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
@@ -24,10 +27,44 @@ export function CargarPlanilla() {
     });
   }
 
+  function limpiar() {
+    setArchivo(null);
+    setVistaPrevia((anterior) => {
+      if (anterior) URL.revokeObjectURL(anterior);
+      return null;
+    });
+  }
+
+  /**
+   * Deja la foto guardada en el celular para subirla cuando vuelva la señal.
+   *
+   * Es el final feliz de estar sin conexión: quien sacó la foto puede seguir
+   * con el próximo poste en vez de quedarse esperando a que haya señal.
+   */
+  async function guardarParaDespues(): Promise<boolean> {
+    if (!archivo || !hayCola()) return false;
+    try {
+      await encolar(archivo);
+      // Despierta a la cola del layout, que se encarga de subirla.
+      window.dispatchEvent(new Event("planilla-encolada"));
+      setGuardada(true);
+      limpiar();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function analizar() {
     if (!archivo) return;
     setAnalizando(true);
     setError(null);
+
+    // Sin señal ni siquiera se intenta: se guarda y listo.
+    if (navigator.onLine === false && (await guardarParaDespues())) {
+      setAnalizando(false);
+      return;
+    }
 
     try {
       const cuerpo = new FormData();
@@ -40,14 +77,19 @@ export function CargarPlanilla() {
       const datos = await respuesta.json();
 
       if (!respuesta.ok) {
+        // El servidor contestó, así que la planilla ya quedó registrada:
+        // reencolarla crearía una segunda para la misma foto.
         setError(datos.error ?? "No se pudo analizar la planilla.");
         return;
       }
 
       router.push(`/revisar/${datos.id}`);
     } catch {
+      // Acá no hubo respuesta del servidor: la foto nunca llegó, así que
+      // guardarla es seguro y no duplica nada.
+      if (await guardarParaDespues()) return;
       setError(
-        "Falló la conexión. Revisá la señal y volvé a intentar; la foto no se perdió.",
+        "Falló la conexión y este navegador no puede guardar la foto para después. Revisá la señal y volvé a intentar.",
       );
     } finally {
       setAnalizando(false);
@@ -67,7 +109,7 @@ export function CargarPlanilla() {
       <input
         ref={inputArchivo}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
         className="hidden"
         onChange={(e) => elegir(e.target.files)}
       />
@@ -107,6 +149,14 @@ export function CargarPlanilla() {
             </span>
           </div>
         </div>
+      )}
+
+      {guardada && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="font-medium">Foto guardada.</span> No hay señal
+          ahora, así que se va a subir sola en cuanto vuelva la conexión. Podés
+          seguir con la próxima planilla.
+        </p>
       )}
 
       {error && (

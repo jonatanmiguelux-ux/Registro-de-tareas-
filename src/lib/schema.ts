@@ -41,8 +41,18 @@ export const ReclamoIaSchema = z.object({
     .string()
     .nullable()
     .describe("Sólo si la fila trae un móvil propio. Normalmente null."),
-  localidad: z.string().nullable().describe("Columna 'Localidad'."),
-  tipoReclamo: z.string().nullable().describe("Columna 'Tipo de reclamo'."),
+  localidad: z
+    .string()
+    .nullable()
+    .describe(
+      "Columna 'Localidad'. Se escribe con sigla (ST, MdA, AV…): transcribir la sigla tal cual, sin expandirla.",
+    ),
+  tipoReclamo: z
+    .string()
+    .nullable()
+    .describe(
+      "Columna 'Tipo de reclamo'. Suele venir vacía: dejar null si no hay nada escrito.",
+    ),
   fechaIngreso: z
     .string()
     .nullable()
@@ -60,11 +70,17 @@ export const ReclamoIaSchema = z.object({
     .describe(
       "Altura, sacada de la columna 'Dirección'. null si la celda no trae número.",
     ),
+  diagnostico: z
+    .string()
+    .nullable()
+    .describe(
+      "Sigla de diagnóstico escrita en la zona de materiales: 'C/C', 'F/C' o 'F/N'. Transcribir la sigla tal cual. null si la fila no tiene ninguna.",
+    ),
   observaciones: z
     .string()
     .nullable()
     .describe(
-      "Anotaciones al margen que correspondan a esta fila. La planilla no tiene columna de observaciones: normalmente null.",
+      "Frase escrita a mano que cruza la zona de materiales de esta fila ('Imposible acceso', 'Pertenece a telefonica'). No es una marca ni una sigla. null si no hay ninguna.",
     ),
   materiales: z
     .array(MarcaMaterialSchema)
@@ -74,7 +90,7 @@ export const ReclamoIaSchema = z.object({
   confianza: z
     .enum(["alta", "media", "baja"])
     .describe(
-      "Qué tan legible resultó la fila. 'baja' si la letra es dudosa o la marca podría pertenecer a otra columna.",
+      "Duda propia al transcribir ESTA fila. 'alta' sólo si leíste cada carácter sin dudar; 'media' si algún carácter podría ser otro (típico en los dígitos del N.º de incidente y en las alturas); 'baja' si no podés leer parte de la fila o dudás de a qué columna va una marca.",
     ),
 });
 

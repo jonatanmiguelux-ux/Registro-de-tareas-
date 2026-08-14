@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatearFecha, paraInputDate } from "@/lib/fechas";
 import type { AvisoDuplicado } from "@/lib/duplicados";
+import { LOCALIDADES } from "@/lib/localidades";
+import { DIAGNOSTICOS } from "@/lib/diagnosticos";
 
 export type MaterialVista = {
   id: string;
@@ -37,6 +39,7 @@ export type ReclamoVista = {
   nroIncidente: string | null;
   calle: string | null;
   numero: string | null;
+  diagnostico: string | null;
   observaciones: string | null;
   confianza: string | null;
   revisado: boolean;
@@ -51,28 +54,59 @@ export type PlanillaVista = {
   reclamos: ReclamoVista[];
 };
 
+type ClaveCampo =
+  | "localidad"
+  | "tipoReclamo"
+  | "fechaIngreso"
+  | "nroIncidente"
+  | "calle"
+  | "numero"
+  | "diagnostico"
+  | "fecha"
+  | "oficial"
+  | "chofer"
+  | "movil";
+
 /**
  * Campos de texto de un reclamo.
  *
- * Los primeros seis son las columnas de la planilla, en el orden del papel
+ * Los primeros siete son las columnas de la planilla, en el orden del papel
  * (con "Dirección" abierta en calle y altura). Los últimos cuatro no son
  * columnas: se heredan de la cabecera y quedan editables por si una fila fue
  * la excepción.
+ *
+ * Los que traen `opciones` se editan con una lista desplegable: en el papel
+ * son un conjunto cerrado de siglas, y elegir de una lista en el celular es
+ * más rápido y menos propenso a error que tipear.
  */
-const CAMPOS = [
-  { clave: "localidad", etiqueta: "Localidad", tipo: "text" },
+const CAMPOS: {
+  clave: ClaveCampo;
+  etiqueta: string;
+  tipo: "text" | "date";
+  opciones?: string[];
+}[] = [
+  {
+    clave: "localidad",
+    etiqueta: "Localidad",
+    tipo: "text",
+    opciones: LOCALIDADES.map((l) => l.nombre),
+  },
   { clave: "tipoReclamo", etiqueta: "Tipo de reclamo", tipo: "text" },
   { clave: "fechaIngreso", etiqueta: "Fecha Ingreso", tipo: "date" },
   { clave: "nroIncidente", etiqueta: "N.º Incidente", tipo: "text" },
   { clave: "calle", etiqueta: "Calle", tipo: "text" },
   { clave: "numero", etiqueta: "N.º", tipo: "text" },
+  {
+    clave: "diagnostico",
+    etiqueta: "Diagnóstico",
+    tipo: "text",
+    opciones: DIAGNOSTICOS.map((d) => d.nombre),
+  },
   { clave: "fecha", etiqueta: "Fecha", tipo: "date" },
   { clave: "oficial", etiqueta: "Oficial", tipo: "text" },
   { clave: "chofer", etiqueta: "Chofer", tipo: "text" },
   { clave: "movil", etiqueta: "Móvil", tipo: "text" },
-] as const;
-
-type ClaveCampo = (typeof CAMPOS)[number]["clave"];
+];
 
 export function RevisarPlanilla({
   planilla,
@@ -95,7 +129,11 @@ export function RevisarPlanilla({
   const [duplicadosAsumidos, setDuplicadosAsumidos] = useState(false);
 
   const dudosos = useMemo(
-    () => reclamos.filter((r) => r.confianza === "baja" && !r.revisado).length,
+    () =>
+      reclamos.filter(
+        (r) =>
+          (r.confianza === "baja" || r.confianza === "media") && !r.revisado,
+      ).length,
     [reclamos],
   );
 
@@ -195,6 +233,7 @@ export function RevisarPlanilla({
             nroIncidente: r.nroIncidente,
             calle: r.calle,
             numero: r.numero,
+            diagnostico: r.diagnostico,
             observaciones: r.observaciones,
             materiales: r.materiales,
           })),
@@ -360,13 +399,19 @@ function FilaReclamo({
   const marcados = new Map(
     reclamo.materiales.map((m) => [m.materialId, m.cantidad]),
   );
-  const dudoso = reclamo.confianza === "baja" && !reclamo.revisado;
+  // Dos niveles de duda declarada por la IA. "media" suele ser un dígito que
+  // podría ser otro: no justifica el mismo rojo que no poder leer la fila,
+  // pero sí que quien revisa la mire contra el papel antes de confirmar.
+  const ilegible = reclamo.confianza === "baja" && !reclamo.revisado;
+  const dudoso = reclamo.confianza === "media" && !reclamo.revisado;
 
   const borde = duplicado
     ? "border-orange-300 bg-orange-50/40"
-    : dudoso
+    : ilegible
       ? "border-amber-300 bg-amber-50/40"
-      : "";
+      : dudoso
+        ? "border-amber-200 bg-amber-50/20"
+        : "";
 
   return (
     <section className={`tarjeta p-4 ${borde}`}>
@@ -379,9 +424,14 @@ function FilaReclamo({
             Posible repetido
           </span>
         )}
-        {dudoso && (
+        {ilegible && (
           <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
             Lectura dudosa
+          </span>
+        )}
+        {dudoso && (
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+            Revisar los números
           </span>
         )}
         {reclamo.revisado && (
@@ -422,23 +472,51 @@ function FilaReclamo({
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {CAMPOS.map((campo) => (
-          <label key={campo.clave} className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
-              {campo.etiqueta}
-            </span>
-            <input
-              className="campo"
-              type={campo.tipo}
-              value={
-                campo.tipo === "date"
-                  ? paraInputDate(reclamo[campo.clave] as string | null)
-                  : ((reclamo[campo.clave] as string | null) ?? "")
-              }
-              onChange={(e) => onCampo(reclamo.id, campo.clave, e.target.value)}
-            />
-          </label>
-        ))}
+        {CAMPOS.map((campo) => {
+          const valor = (reclamo[campo.clave] as string | null) ?? "";
+          return (
+            <label key={campo.clave} className="block">
+              <span className="mb-1 block text-xs font-medium text-slate-600">
+                {campo.etiqueta}
+              </span>
+              {campo.opciones ? (
+                <select
+                  className="campo"
+                  value={valor}
+                  onChange={(e) =>
+                    onCampo(reclamo.id, campo.clave, e.target.value)
+                  }
+                >
+                  <option value="">—</option>
+                  {campo.opciones.map((opcion) => (
+                    <option key={opcion} value={opcion}>
+                      {opcion}
+                    </option>
+                  ))}
+                  {/* Lo que la IA leyó y no está en la lista se conserva como
+                      una opción más: descartarlo perdería lo que dice el
+                      papel. */}
+                  {valor && !campo.opciones.includes(valor) && (
+                    <option value={valor}>{valor}</option>
+                  )}
+                </select>
+              ) : (
+                <input
+                  className="campo"
+                  type={campo.tipo}
+                  value={
+                    campo.tipo === "date"
+                      ? paraInputDate(reclamo[campo.clave] as string | null)
+                      : valor
+                  }
+                  onChange={(e) =>
+                    onCampo(reclamo.id, campo.clave, e.target.value)
+                  }
+                />
+              )}
+            </label>
+          );
+        })}
       </div>
 
       <label className="mt-3 block">

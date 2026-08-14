@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { guardarImagen } from "@/lib/almacenamiento";
-import { analizarPlanilla, esTipoImagenValido } from "@/lib/ocr";
+import { analizarPlanilla, esTipoImagenValido, mensajeDeError } from "@/lib/ocr";
 import { asegurarMateriales, clave, listarMateriales } from "@/lib/materiales";
 import { parsearFecha } from "@/lib/fechas";
+import { normalizarLocalidad } from "@/lib/localidades";
+import { normalizarDiagnostico } from "@/lib/diagnosticos";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
   if (!esTipoImagenValido(archivo.type)) {
     return NextResponse.json(
       {
-        error: `Formato no soportado (${archivo.type || "desconocido"}). Usá JPG, PNG, WEBP o GIF. Si sacaste la foto con un iPhone en formato HEIC, cambiá el formato de cámara a "Más compatible".`,
+        error: `Formato no soportado (${archivo.type || "desconocido"}). Usá JPG, PNG, WEBP o HEIC.`,
       },
       { status: 415 },
     );
@@ -64,7 +66,12 @@ export async function POST(request: Request) {
     const { datos, modelo } = await analizarPlanilla(
       bytes.toString("base64"),
       archivo.type,
-      catalogo.map((m) => ({ nombre: m.nombre, grupo: m.grupo })),
+      catalogo
+        .filter((m) => m.columnaImpresa)
+        .map((m) => ({ nombre: m.nombre, grupo: m.grupo })),
+      catalogo
+        .filter((m) => !m.columnaImpresa)
+        .map((m) => ({ nombre: m.nombre })),
     );
 
     const mapaMateriales = await asegurarMateriales(datos.columnasMateriales);
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
           oficial: datos.encabezado.oficial,
           chofer: datos.encabezado.chofer,
           movil: datos.encabezado.movil,
-          localidad: datos.encabezado.localidad,
+          localidad: normalizarLocalidad(datos.encabezado.localidad),
           modelo,
           respuestaCruda: datos,
           notasIa: datos.notas,
@@ -98,12 +105,15 @@ export async function POST(request: Request) {
             oficial: fila.oficial ?? datos.encabezado.oficial,
             chofer: fila.chofer ?? datos.encabezado.chofer,
             movil: fila.movil ?? datos.encabezado.movil,
-            localidad: fila.localidad ?? datos.encabezado.localidad,
+            localidad: normalizarLocalidad(
+              fila.localidad ?? datos.encabezado.localidad,
+            ),
             tipoReclamo: fila.tipoReclamo,
             fechaIngreso: parsearFecha(fila.fechaIngreso),
             nroIncidente: fila.nroIncidente,
             calle: fila.calle,
             numero: fila.numero,
+            diagnostico: normalizarDiagnostico(fila.diagnostico),
             observaciones: fila.observaciones,
             confianza: fila.confianza,
           },
@@ -133,11 +143,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id: planilla.id }, { status: 201 });
   } catch (error) {
-    const mensaje =
+    // En pantalla va el mensaje traducido; en la base queda el original, que
+    // es el que sirve para diagnosticar después.
+    const mensaje = mensajeDeError(error);
+    const crudo =
       error instanceof Error ? error.message : "Error desconocido al analizar.";
+
     await prisma.planilla.update({
       where: { id: planilla.id },
-      data: { estado: "ERROR", error: mensaje },
+      data: { estado: "ERROR", error: crudo },
     });
     return NextResponse.json(
       { id: planilla.id, error: mensaje },

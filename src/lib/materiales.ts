@@ -12,8 +12,20 @@ export async function listarMateriales(): Promise<Material[]> {
   });
 }
 
-/** Los títulos que abarcan bloques de columnas, no columnas marcables. */
-const GRUPOS = new Set(["lámparas", "lamparas", "balastos", "otros materiales"]);
+/**
+ * Los títulos que abarcan bloques de columnas, no columnas marcables.
+ *
+ * "Otras materiales" está tal cual porque así viene impreso en el papel: si el
+ * modelo transcribe el título con su error de imprenta, hay que descartarlo
+ * igual que a la versión corregida.
+ */
+const GRUPOS = new Set([
+  "lámparas",
+  "lamparas",
+  "balastos",
+  "otros materiales",
+  "otras materiales",
+]);
 
 /**
  * Garantiza que exista una fila de catálogo por cada columna leída.
