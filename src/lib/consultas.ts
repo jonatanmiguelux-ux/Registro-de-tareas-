@@ -23,7 +23,11 @@ export async function totales(f: FiltrosReclamo): Promise<Totales> {
       prisma.reclamo.count({
         where: { AND: [where, { planilla: { estado: { not: "CONFIRMADA" } } }] },
       }),
-      prisma.reclamo.count({ where: { ...where, confianza: "baja", revisado: false } }),
+      // "media" cuenta igual que "baja": las dos son duda declarada por la IA
+      // sobre una fila que nadie miró todavía contra el papel.
+      prisma.reclamo.count({
+        where: { ...where, confianza: { in: ["baja", "media"] }, revisado: false },
+      }),
       prisma.reclamoMaterial.aggregate({
         where: { reclamo: where },
         _sum: { cantidad: true },

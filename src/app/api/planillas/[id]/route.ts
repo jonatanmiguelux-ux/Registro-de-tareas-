@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { borrarImagen } from "@/lib/almacenamiento";
 import { parsearFecha } from "@/lib/fechas";
+import { normalizarDiagnostico } from "@/lib/diagnosticos";
 
 export const runtime = "nodejs";
 
@@ -18,6 +19,7 @@ const ReclamoCorregido = z.object({
   nroIncidente: z.string().nullable(),
   calle: z.string().nullable(),
   numero: z.string().nullable(),
+  diagnostico: z.string().nullable(),
   observaciones: z.string().nullable(),
   /** IDs de material marcados tras la corrección humana. */
   materiales: z.array(z.object({ materialId: z.string(), cantidad: z.number() })),
@@ -104,6 +106,10 @@ export async function PATCH(
           nroIncidente: fila.nroIncidente,
           calle: fila.calle,
           numero: fila.numero,
+          // Una persona con el papel delante puede escribir el diagnóstico
+          // como quiera; se normaliza igual que en el alta para que el
+          // historial no termine con "C/C" y "Cable Cortado" conviviendo.
+          diagnostico: normalizarDiagnostico(fila.diagnostico),
           observaciones: fila.observaciones,
           revisado: true,
         },

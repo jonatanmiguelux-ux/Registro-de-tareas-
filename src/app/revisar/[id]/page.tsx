@@ -62,6 +62,7 @@ export default async function PaginaRevisar({
           nroIncidente: r.nroIncidente,
           calle: r.calle,
           numero: r.numero,
+          diagnostico: r.diagnostico,
           observaciones: r.observaciones,
           confianza: r.confianza,
           revisado: r.revisado,

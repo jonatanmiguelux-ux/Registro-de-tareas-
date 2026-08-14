@@ -9,11 +9,16 @@ Funciona igual en celular y en PC.
 ## Qué hace
 
 1. **Cargar** — foto desde la cámara del celular, o una imagen desde la PC.
-2. **Leer** — Claude (visión) transcribe la planilla: los datos de cada fila y
+2. **Leer** — Gemini (visión) transcribe la planilla: los datos de cada fila y
    las X de cada columna de materiales, asociadas a su fila y su columna.
 3. **Revisar** — se muestra todo lo detectado en campos editables, junto a la
    foto original. Las filas que la IA leyó con dudas quedan resaltadas, y las
    que parecen ya estar cargadas se avisan antes de guardar.
+
+   La confianza que declara la IA tiene dos niveles: *"Revisar los números"*
+   cuando algún carácter podía ser otro —el caso típico son los ocho dígitos
+   del N.º de incidente— y *"Lectura dudosa"* cuando no pudo leer parte de la
+   fila o no está segura de a qué columna va una marca.
 4. **Guardar** — cada carga es un registro nuevo. Nunca se pisan datos de otro
    día: el histórico se acumula.
 5. **Consultar** — historial por fecha, búsqueda por N.º de incidente y
@@ -50,20 +55,49 @@ reclamo queda completo y se puede exportar solo.
 N.º Incidente · Dirección — esta última llega en una sola celda y el sistema
 la separa en calle y altura.
 
+**La localidad se escribe con sigla.** El sistema la expande al guardar, así
+el historial y el Excel salen legibles:
+
+| | | | |
+|---|---|---|---|
+| NA — Nueva Atlantis | MdA — Mar de Ajó | CA — Costa Azul | LL — La Lucila |
+| AV — Aguas Verdes | CE — Costa del Este | MdT — Mar del Tuyú | ST — Santa Teresita |
+| CCh — Costa Chica | LT — Las Toninas | SC — San Clemente | |
+
 **Materiales**, en tres grupos, con los encabezados impresos en vertical:
 
 | Grupo | Columnas |
 |---|---|
-| Lámparas | LED E27, Adaptador, LED 60, LED 120, LED 180, Sodio 100, Sodio 150, Sodio 250, Sodio 400, H/Q 250, H/Q 400 |
+| Lámparas | LED E27, LED E40, Sodio 100, Sodio 150, Sodio 250, Sodio 400, H/Q 250, H/Q 400 |
 | Balastos | B 100 int, B 150 int, B 150 ext, B 250 int, B 400 int |
-| Otros materiales | Fotocontrol, Zócalo ext, Goliat, Morceto, Ignitor |
+| Otros materiales | Fotocontrol, Zócalo ext, Edison, Goliat, Morteto, Ignitor |
+
+En el papel el tercer grupo está impreso como "Otras materiales". El grupo es
+taxonomía nuestra y no un dato de la planilla, así que en el código va en
+singular correcto; el lector de planillas descarta las dos formas por igual.
 
 Cada celda marcada cuenta 1; si en vez de una X hay un número escrito, se toma
 ese número como cantidad.
 
+### Qué más aparece escrito en la zona de materiales
+
+No todo lo que se escribe ahí es una marca de material. Hay cuatro cosas
+distintas y cada una termina en un lugar distinto:
+
+| Lo que hay en el papel | Adónde va |
+|---|---|
+| Una X, cruz o número en un casillero | Marca de material, con su cantidad |
+| **AD** al lado de una lámpara | Material **Adaptador**. No tiene columna impresa: se anota a mano |
+| **C/C**, **F/C**, **F/N** | Campo **Diagnóstico**: Cable Cortado, Falso Contacto, Funciona Normal |
+| Una frase que cruza varias columnas ("Imposible acceso") | Campo **Observaciones** |
+
+El diagnóstico y las observaciones **no consumen stock**: dicen qué se
+encontró, no qué se gastó. Meterlos como material descontaría material que
+nunca salió del depósito.
+
 ## El catálogo de materiales
 
-Las 21 columnas vienen precargadas en `prisma/seed.ts` (`npm run db:seed`).
+Las 19 columnas vienen precargadas en `prisma/seed.ts` (`npm run db:seed`).
 Precargarlas fija la nomenclatura desde la primera planilla y evita que dos
 fotos generen dos variantes del mismo material.
 
@@ -73,6 +107,12 @@ su grupo. La lista precargada se le pasa al modelo como referencia y como
 orden esperado de las columnas —que es lo que más ayuda a no correrse al
 asociar una marca—, no como límite. También se puede dar de alta una columna
 a mano con `POST /api/materiales`.
+
+El catálogo tiene además un material sin columna impresa, el **Adaptador**,
+marcado con `columnaImpresa: false`. Consume stock como cualquier otro, pero
+queda fuera de la lista ordenada que se le pasa al modelo: esa lista sirve
+para contar casilleros, y un nombre de más ahí corre todas las marcas
+siguientes.
 
 ## Puesta en marcha
 
@@ -85,7 +125,7 @@ docker compose up -d
 
 # 2. Configuración
 cp .env.example .env
-#    editá .env y poné tu ANTHROPIC_API_KEY
+#    editá .env y poné tu GEMINI_API_KEY (https://aistudio.google.com/apikey)
 
 # 3. Dependencias y esquema
 npm install
@@ -97,26 +137,75 @@ npm run dev
 
 Abrí http://localhost:3000
 
-Para probar desde el celular en la misma red, levantá con
-`npm run dev -- -H 0.0.0.0` y entrá a `http://<ip-de-tu-pc>:3000`. Tené en
-cuenta que la cámara del celular sólo se habilita en `localhost` o sobre HTTPS:
-sin HTTPS vas a poder elegir una foto de la galería, pero no abrir la cámara
-desde el navegador.
+## Desde el celular
+
+La app se instala en el celular como una app más: ícono propio en la pantalla
+de inicio, sin barra de direcciones. No se publica en ninguna tienda ni hay
+que registrarse — es la misma app conectada al mismo servidor.
+
+```bash
+npm run dev:celular
+```
+
+Levanta con HTTPS y escuchando en toda la red. Entrá desde el celular a
+`https://<ip-de-tu-pc>:3000` y aceptá el aviso de certificado (es
+autofirmado, generado por Next la primera vez). Después:
+
+- **Android/Chrome** — menú ⋮ → "Instalar aplicación"
+- **iPhone/Safari** — Compartir → "Agregar a inicio"
+
+**El HTTPS no es opcional**: los navegadores sólo habilitan la cámara en
+`localhost` o sobre HTTPS. Por HTTP plano vas a poder elegir una foto de la
+galería, pero el botón de sacar la foto no abre la cámara.
+
+### Sin señal
+
+Si no hay conexión, la foto **no se pierde**: queda guardada en el celular y
+se sube sola cuando vuelve la señal. Quien está en la calle saca la foto,
+recibe el aviso de que quedó guardada y sigue con el próximo poste.
+
+La app avisa cuántas hay esperando y las sube en el orden en que se sacaron.
+Reintenta cuando vuelve la red, cuando se vuelve a la app y cada 30 segundos,
+porque el evento de "volvió la conexión" no siempre llega si la señal se
+recupera sin cambiar de red.
+
+Hay un detalle que importa para no cargar nada dos veces: **una foto sale de
+la cola cuando el servidor responde, no cuando responde que salió bien.**
+`POST /api/planillas` crea la planilla *antes* de mandar la foto al modelo,
+así que un error de lectura igual deja la planilla guardada (en estado
+ERROR). Reintentar eso crearía una segunda planilla para la misma foto y el
+consumo de materiales se contaría doble. Sólo se conserva lo que nunca llegó
+al servidor. Está cubierto por tests: `npm test`.
+
+Dos límites conocidos: la app tiene que estar abierta en el navegador para
+que la subida ocurra —subir con la app cerrada necesita Background Sync, que
+Android soporta pero iOS no—, y sin señal sólo abre la pantalla de cargar;
+el historial, el tablero y el stock necesitan conexión, porque mostrar una
+copia guardada sería mentir sobre el estado real.
 
 ## Formatos de foto
 
-JPG, PNG, WEBP y GIF, hasta 20 MB. **Los iPhone que graban en HEIC no sirven
-directamente**: en Ajustes → Cámara → Formatos hay que elegir "Más compatible",
-o convertir la imagen antes de subirla.
+JPG, PNG, WEBP y HEIC, hasta 20 MB. Las fotos de iPhone en HEIC entran
+directo, sin tener que tocar el formato de cámara.
+
+La planilla es apaisada y se fotografía con el celular en vertical, así que es
+normal que la hoja salga de costado. No hace falta rotarla antes de subirla:
+el modelo ubica la orientación.
 
 ## Estructura
 
 ```
 prisma/schema.prisma        Modelo de datos
-src/lib/ocr.ts              Lectura de la planilla con Claude
+src/lib/ocr.ts              Lectura de la planilla con Gemini
 src/lib/schema.ts           Forma de la respuesta de la IA (zod)
+src/lib/gemini-schema.ts    Traducción de ese zod al esquema que acepta Gemini
+src/lib/localidades.ts      Siglas de localidad → nombre completo
+src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx
 src/lib/materiales.ts       Catálogo de columnas, con alta automática
+src/lib/cola.ts             Cola de fotos sin señal (IndexedDB)
+src/app/manifest.ts         Manifiesto de la PWA (instalación en el celular)
+public/sw.js                Service worker: sólo cachea estáticos, nunca datos
 src/app/page.tsx            Cargar
 src/app/revisar/[id]/       Revisar y corregir
 src/app/registros/          Histórico y exportación
@@ -201,12 +290,23 @@ salida: se restarían dos veces.
 - **Se guarda la respuesta cruda de la IA** (`respuestaCruda`) junto con la
   foto original, para poder auditar cualquier dato contra el papel.
 
+## Sin login, a propósito
+
+La app no tiene usuarios ni contraseñas, y no es algo pendiente: es una
+decisión. Quien está en la calle con el papel abre la app y saca la foto. Una
+pantalla de acceso entre el operario y la cámara agrega fricción justo en el
+único momento que importa, y no protege gran cosa: los datos son partes de
+trabajo de alumbrado público, no información sensible.
+
+La contracara es que **cualquiera con la URL puede cargar, editar y borrar**.
+Mientras la app viva en la red interna del municipio eso está bien. Si algún
+día se publica en internet, hay que resolverlo antes.
+
 ## Para ampliar
 
 Lo obvio que sigue, en orden de utilidad:
 
-- Usuarios y permisos (hoy la app no tiene login).
-- Procesamiento en segundo plano con una cola, para planillas muy largas.
 - Stock mínimo por material, para avisar antes de llegar a cero y no después.
 - Búsqueda por calle o localidad, además de por N.º de incidente.
+- Procesamiento en segundo plano con una cola, para planillas muy largas.
 - Corrección de perspectiva de la foto antes de mandarla al modelo.

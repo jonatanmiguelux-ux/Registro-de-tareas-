@@ -7,8 +7,9 @@ const DIRECTORIO = process.env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads")
 const EXTENSIONES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
-  "image/gif": "gif",
   "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
 };
 
 /** Guarda la foto original y devuelve la ruta relativa con la que se la recupera. */
