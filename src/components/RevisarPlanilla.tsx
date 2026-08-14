@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { paraInputDate } from "@/lib/fechas";
+import { formatearFecha, paraInputDate } from "@/lib/fechas";
+import type { AvisoDuplicado } from "@/lib/duplicados";
 
 export type MaterialVista = {
   id: string;
@@ -75,9 +77,11 @@ type ClaveCampo = (typeof CAMPOS)[number]["clave"];
 export function RevisarPlanilla({
   planilla,
   materiales,
+  duplicadosIniciales = [],
 }: {
   planilla: PlanillaVista;
   materiales: MaterialVista[];
+  duplicadosIniciales?: AvisoDuplicado[];
 }) {
   const router = useRouter();
   const [reclamos, setReclamos] = useState<ReclamoVista[]>(planilla.reclamos);
@@ -85,10 +89,19 @@ export function RevisarPlanilla({
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [duplicados, setDuplicados] =
+    useState<AvisoDuplicado[]>(duplicadosIniciales);
+  /** Se enciende cuando el usuario ya vio el aviso y aun así quiere confirmar. */
+  const [duplicadosAsumidos, setDuplicadosAsumidos] = useState(false);
 
   const dudosos = useMemo(
     () => reclamos.filter((r) => r.confianza === "baja" && !r.revisado).length,
     [reclamos],
+  );
+
+  const porReclamo = useMemo(
+    () => new Map(duplicados.map((d) => [d.reclamoId, d])),
+    [duplicados],
   );
 
   function editarCampo(id: string, campo: ClaveCampo, valor: string) {
@@ -145,6 +158,26 @@ export function RevisarPlanilla({
     setMensaje(null);
 
     try {
+      // Antes de cerrar la planilla, volvemos a chequear duplicados: el
+      // corrector pudo haber tipeado un N.º de incidente que recién ahora
+      // choca con uno ya cargado.
+      if (confirmar && !duplicadosAsumidos) {
+        const respuesta = await fetch(
+          `/api/planillas/${planilla.id}/duplicados`,
+        );
+        if (respuesta.ok) {
+          const avisos: AvisoDuplicado[] = await respuesta.json();
+          setDuplicados(avisos);
+          if (avisos.length > 0) {
+            setDuplicadosAsumidos(true);
+            setError(
+              `Hay ${avisos.length} reclamo${avisos.length === 1 ? "" : "s"} que parecería${avisos.length === 1 ? "" : "n"} estar ya cargado${avisos.length === 1 ? "" : "s"}. Mirá los avisos de abajo. Si igual está bien, volvé a tocar "Confirmar planilla".`,
+            );
+            return;
+          }
+        }
+      }
+
       const respuesta = await fetch(`/api/planillas/${planilla.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -224,6 +257,18 @@ export function RevisarPlanilla({
         </p>
       )}
 
+      {duplicados.length > 0 && (
+        <p className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900">
+          <strong className="font-medium">Posibles repetidos:</strong>{" "}
+          {duplicados.length} reclamo{duplicados.length === 1 ? "" : "s"} de esta
+          planilla coincide{duplicados.length === 1 ? "" : "n"} con
+          {duplicados.length === 1 ? " otro" : " otros"} ya cargado
+          {duplicados.length === 1 ? "" : "s"}. Está marcado
+          {duplicados.length === 1 ? "" : "s"} más abajo. Podés confirmar igual
+          si de verdad son reclamos distintos.
+        </p>
+      )}
+
       {verFoto && (
         <div className="tarjeta overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -249,6 +294,7 @@ export function RevisarPlanilla({
             indice={indice}
             reclamo={reclamo}
             materiales={materiales}
+            duplicado={porReclamo.get(reclamo.id)}
             onCampo={editarCampo}
             onObservaciones={editarObservaciones}
             onMaterial={alternarMaterial}
@@ -296,6 +342,7 @@ function FilaReclamo({
   indice,
   reclamo,
   materiales,
+  duplicado,
   onCampo,
   onObservaciones,
   onMaterial,
@@ -304,6 +351,7 @@ function FilaReclamo({
   indice: number;
   reclamo: ReclamoVista;
   materiales: MaterialVista[];
+  duplicado?: AvisoDuplicado;
   onCampo: (id: string, campo: ClaveCampo, valor: string) => void;
   onObservaciones: (id: string, valor: string) => void;
   onMaterial: (id: string, materialId: string) => void;
@@ -314,14 +362,23 @@ function FilaReclamo({
   );
   const dudoso = reclamo.confianza === "baja" && !reclamo.revisado;
 
+  const borde = duplicado
+    ? "border-orange-300 bg-orange-50/40"
+    : dudoso
+      ? "border-amber-300 bg-amber-50/40"
+      : "";
+
   return (
-    <section
-      className={`tarjeta p-4 ${dudoso ? "border-amber-300 bg-amber-50/40" : ""}`}
-    >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-700">
+    <section className={`tarjeta p-4 ${borde}`}>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h2 className="mr-auto text-sm font-semibold text-slate-700">
           Reclamo {indice + 1}
         </h2>
+        {duplicado && (
+          <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-800">
+            Posible repetido
+          </span>
+        )}
         {dudoso && (
           <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
             Lectura dudosa
@@ -333,6 +390,36 @@ function FilaReclamo({
           </span>
         )}
       </div>
+
+      {duplicado && (
+        <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-900">
+          <p className="font-medium">
+            {duplicado.motivo === "incidente"
+              ? "Ya hay un reclamo con este N.º de incidente:"
+              : "Ya hay un reclamo en la misma fecha y dirección:"}
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {duplicado.coincidencias.map((c) => (
+              <li key={c.reclamoId}>
+                {c.mismaPlanilla ? (
+                  <>En esta misma planilla</>
+                ) : (
+                  <Link
+                    href={`/revisar/${c.planillaId}`}
+                    className="underline underline-offset-2"
+                  >
+                    {c.archivoNombre}
+                  </Link>
+                )}
+                {" — "}
+                {formatearFecha(c.fecha)}
+                {c.nroIncidente && ` · N.º ${c.nroIncidente}`}
+                {c.direccion && ` · ${c.direccion}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {CAMPOS.map((campo) => (

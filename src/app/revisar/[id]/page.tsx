@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { listarMateriales } from "@/lib/materiales";
+import { detectarDuplicados } from "@/lib/duplicados";
 import { RevisarPlanilla } from "@/components/RevisarPlanilla";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default async function PaginaRevisar({
 }) {
   const { id } = await params;
 
-  const [planilla, materiales] = await Promise.all([
+  const [planilla, materiales, duplicados] = await Promise.all([
     prisma.planilla.findUnique({
       where: { id },
       include: {
@@ -21,6 +22,7 @@ export default async function PaginaRevisar({
       },
     }),
     listarMateriales(),
+    detectarDuplicados(id),
   ]);
 
   if (!planilla) notFound();
@@ -75,6 +77,7 @@ export default async function PaginaRevisar({
         grupo: m.grupo,
         unidad: m.unidad,
       }))}
+      duplicadosIniciales={duplicados}
     />
   );
 }

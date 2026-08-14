@@ -99,7 +99,12 @@ model Material {
   orden  Int     @default(0)
   activo Boolean @default(true)
 
-  reclamos ReclamoMaterial[]
+  /// Punto de partida del stock. Es un valor que se corrige, no un movimiento:
+  /// volver a cargarlo reemplaza el anterior en vez de sumarse.
+  stockInicial Float @default(0)
+
+  reclamos     ReclamoMaterial[]
+  movimientos  MovimientoStock[]
 
   creadoEn DateTime @default(now())
 
@@ -122,4 +127,33 @@ model ReclamoMaterial {
   @@unique([reclamoId, materialId])
   @@index([materialId])
   @@map("reclamo_materiales")
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+/// Movimiento de depósito cargado a mano.
+///
+/// Acá NO van los materiales gastados en los reclamos: esos ya están en
+/// `ReclamoMaterial` y se descuentan solos del stock cuando la planilla se
+/// confirma. Cargarlos también acá los restaría dos veces.
+///
+/// Las SALIDA de esta tabla son para lo que no pasa por una planilla: una
+/// rotura, un traspaso a otra cuadrilla, un faltante de inventario.
+model MovimientoStock {
+  id         String         @id @default(cuid())
+  materialId String
+  material   Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  tipo       TipoMovimiento
+  cantidad   Float
+  fecha      DateTime       @default(now())
+  nota       String?
+
+  creadoEn DateTime @default(now())
+
+  @@index([materialId, fecha])
+  @@index([tipo])
+  @@map("movimientos_stock")
 }

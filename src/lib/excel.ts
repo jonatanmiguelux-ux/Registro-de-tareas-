@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import type { Material, Prisma } from "@prisma/client";
 import { formatearFecha } from "@/lib/fechas";
+import type { ConsumoMaterial } from "@/lib/consultas";
 
 type ReclamoExportado = Prisma.ReclamoGetPayload<{
   include: { materiales: true; planilla: true };
@@ -25,16 +26,18 @@ const CAMPOS = [
 ] as const;
 
 /**
- * Arma el libro de Excel con dos hojas:
+ * Arma el libro de Excel con tres hojas:
  *
  * - "Reclamos": una fila por reclamo, con una columna por material. Es la
  *   vista que se parece al papel y sirve para leer de un vistazo.
  * - "Materiales": una fila por cada material usado en cada reclamo. Es la
- *   vista larga, la que sirve para tablas dinámicas y para sumar consumos.
+ *   vista larga, la que sirve para tablas dinámicas.
+ * - "Consumo": el total por tipo de material del período exportado, ya sumado.
  */
 export async function construirLibro(
   reclamos: ReclamoExportado[],
   materiales: Material[],
+  consumo: ConsumoMaterial[] = [],
 ): Promise<Buffer> {
   const libro = new ExcelJS.Workbook();
   libro.creator = "Registro de tareas";
@@ -113,7 +116,40 @@ export async function construirLibro(
     }
   }
 
-  for (const hoja of [hojaReclamos, hojaMateriales]) {
+  const hojaConsumo = libro.addWorksheet("Consumo", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+
+  hojaConsumo.columns = [
+    { header: "Grupo", width: 18 },
+    { header: "Material", width: 22 },
+    { header: "Cantidad", width: 12 },
+    { header: "Unidad", width: 10 },
+    { header: "Reclamos", width: 12 },
+  ];
+
+  for (const linea of consumo) {
+    hojaConsumo.addRow([
+      linea.grupo ?? "",
+      linea.nombre,
+      linea.cantidad,
+      linea.unidad ?? "",
+      linea.reclamos,
+    ]);
+  }
+
+  if (consumo.length > 0) {
+    const total = hojaConsumo.addRow([
+      "",
+      "TOTAL",
+      consumo.reduce((t, c) => t + c.cantidad, 0),
+      "",
+      "",
+    ]);
+    total.font = { bold: true };
+  }
+
+  for (const hoja of [hojaReclamos, hojaMateriales, hojaConsumo]) {
     hoja.getRow(1).font = { bold: true };
     hoja.getRow(1).fill = {
       type: "pattern",

@@ -27,19 +27,21 @@ export default function RootLayout({
             <Link href="/" className="text-base font-semibold tracking-tight">
               Registro de tareas
             </Link>
-            <div className="flex items-center gap-1 text-sm">
-              <Link
-                href="/"
-                className="rounded-md px-3 py-2 hover:bg-slate-100"
-              >
-                Cargar
-              </Link>
-              <Link
-                href="/registros"
-                className="rounded-md px-3 py-2 hover:bg-slate-100"
-              >
-                Registros
-              </Link>
+            <div className="-mr-1 flex items-center gap-0.5 overflow-x-auto text-sm">
+              {[
+                { href: "/", texto: "Cargar" },
+                { href: "/registros", texto: "Registros" },
+                { href: "/tablero", texto: "Tablero" },
+                { href: "/stock", texto: "Stock" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="shrink-0 rounded-md px-3 py-2 hover:bg-slate-100"
+                >
+                  {item.texto}
+                </Link>
+              ))}
             </div>
           </nav>
         </header>

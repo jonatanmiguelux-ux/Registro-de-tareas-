@@ -1,0 +1,99 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { calcularStock } from "@/lib/stock";
+import { parsearFecha } from "@/lib/fechas";
+
+export const runtime = "nodejs";
+
+/** GET /api/stock — stock actual por material. */
+export async function GET() {
+  return NextResponse.json(await calcularStock());
+}
+
+const Movimiento = z.object({
+  materialId: z.string().min(1),
+  tipo: z.enum(["ENTRADA", "SALIDA"]),
+  cantidad: z.number().positive(),
+  fecha: z.string().nullable().optional(),
+  nota: z.string().nullable().optional(),
+});
+
+/** POST /api/stock — registra una entrada o una salida de depósito. */
+export async function POST(request: Request) {
+  const cuerpo = Movimiento.safeParse(await request.json());
+  if (!cuerpo.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos.", detalle: cuerpo.error.issues },
+      { status: 400 },
+    );
+  }
+
+  const material = await prisma.material.findUnique({
+    where: { id: cuerpo.data.materialId },
+    select: { id: true },
+  });
+  if (!material) {
+    return NextResponse.json({ error: "No existe el material." }, { status: 404 });
+  }
+
+  const movimiento = await prisma.movimientoStock.create({
+    data: {
+      materialId: cuerpo.data.materialId,
+      tipo: cuerpo.data.tipo,
+      cantidad: cuerpo.data.cantidad,
+      fecha: parsearFecha(cuerpo.data.fecha ?? null) ?? new Date(),
+      nota: cuerpo.data.nota?.trim() || null,
+    },
+  });
+
+  return NextResponse.json(movimiento, { status: 201 });
+}
+
+const StockInicial = z.object({
+  materialId: z.string().min(1),
+  stockInicial: z.number().min(0),
+});
+
+/**
+ * PATCH /api/stock — fija el stock inicial de un material.
+ *
+ * Reemplaza el valor anterior en vez de sumarse: el inicial es el punto de
+ * partida del conteo, no un movimiento.
+ */
+export async function PATCH(request: Request) {
+  const cuerpo = StockInicial.safeParse(await request.json());
+  if (!cuerpo.success) {
+    return NextResponse.json(
+      { error: "Datos inválidos.", detalle: cuerpo.error.issues },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const material = await prisma.material.update({
+      where: { id: cuerpo.data.materialId },
+      data: { stockInicial: cuerpo.data.stockInicial },
+    });
+    return NextResponse.json(material);
+  } catch {
+    return NextResponse.json({ error: "No existe el material." }, { status: 404 });
+  }
+}
+
+const BorrarMovimiento = z.object({ id: z.string().min(1) });
+
+/** DELETE /api/stock — deshace un movimiento cargado por error. */
+export async function DELETE(request: Request) {
+  const cuerpo = BorrarMovimiento.safeParse(await request.json());
+  if (!cuerpo.success) {
+    return NextResponse.json({ error: "Falta el id." }, { status: 400 });
+  }
+
+  try {
+    await prisma.movimientoStock.delete({ where: { id: cuerpo.data.id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "No existe el movimiento." }, { status: 404 });
+  }
+}
