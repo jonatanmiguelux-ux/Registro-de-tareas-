@@ -50,6 +50,9 @@ model User {
   accounts Account[]
   sessions Session[]
 
+  planillasCargadas   Planilla[] @relation("cargadaPor")
+  planillasConfirmadas Planilla[] @relation("confirmadaPor")
+
   creadoEn DateTime @default(now())
 
   @@index([estado])
@@ -127,7 +130,26 @@ model Planilla {
   modelo         String?
   respuestaCruda Json?
   notasIa        String?
-  error          String?
+
+  /// Mensaje del fallo, escrito para mostrar en pantalla.
+  error String?
+
+  /// El mismo fallo, con el detalle técnico crudo del proveedor.
+  ///
+  /// Va aparte porque esos textos vienen en inglés y mencionan claves, cuotas
+  /// y URLs internas: sirven para diagnosticar, no para mostrarle a quien
+  /// está en la calle con el papel.
+  errorTecnico String?
+
+  /// Quién la cargó y quién la confirmó.
+  ///
+  /// El vínculo es opcional y no borra en cascada: si mañana se da de baja a
+  /// una persona, sus planillas tienen que seguir existiendo. El histórico es
+  /// el activo del sistema, no las cuentas.
+  cargadaPorId    String?
+  cargadaPor      User?   @relation("cargadaPor", fields: [cargadaPorId], references: [id], onDelete: SetNull)
+  confirmadaPorId String?
+  confirmadaPor   User?   @relation("confirmadaPor", fields: [confirmadaPorId], references: [id], onDelete: SetNull)
 
   reclamos Reclamo[]
 
@@ -136,6 +158,7 @@ model Planilla {
   confirmadoEn  DateTime?
 
   @@index([creadoEn])
+  @@index([cargadaPorId])
   @@index([estado])
   @@map("planillas")
 }

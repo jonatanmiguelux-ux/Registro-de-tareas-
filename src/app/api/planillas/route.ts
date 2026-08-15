@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { guardarImagen } from "@/lib/almacenamiento";
-import { analizarPlanilla, esTipoImagenValido, mensajeDeError } from "@/lib/ocr";
+import { analizarPlanilla, mensajeDeError } from "@/lib/ocr";
+import { verificarImagen } from "@/lib/imagenes";
 import { asegurarMateriales, clave, listarMateriales } from "@/lib/materiales";
 import { parsearFecha } from "@/lib/fechas";
 import { normalizarLocalidad } from "@/lib/localidades";
@@ -12,6 +13,9 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 const TAMANIO_MAXIMO = 20 * 1024 * 1024;
+
+/** Tope de lecturas por persona y por hora. Cada una le cuesta al municipio. */
+const LECTURAS_POR_HORA = 40;
 
 /** GET /api/planillas — histórico, de la más reciente a la más vieja. */
 export async function GET() {
@@ -40,15 +44,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!esTipoImagenValido(archivo.type)) {
-    return NextResponse.json(
-      {
-        error: `Formato no soportado (${archivo.type || "desconocido"}). Usá JPG, PNG, WEBP o HEIC.`,
-      },
-      { status: 415 },
-    );
-  }
-
   if (archivo.size > TAMANIO_MAXIMO) {
     return NextResponse.json(
       { error: "La imagen supera los 20 MB. Sacá la foto con menos resolución." },
@@ -57,14 +52,42 @@ export async function POST(request: Request) {
   }
 
   const bytes = Buffer.from(await archivo.arrayBuffer());
-  const archivoRuta = await guardarImagen(bytes, archivo.type);
+
+  // El tipo se decide por el contenido, no por lo que declara el navegador:
+  // ese dato lo pone quien sube y se puede falsear. De acá en adelante se usa
+  // el detectado.
+  const verificacion = verificarImagen(bytes, archivo.type);
+  if (!verificacion.ok) {
+    return NextResponse.json({ error: verificacion.motivo }, { status: 415 });
+  }
+  const tipo = verificacion.tipo;
+
+  // Cada lectura le cuesta plata al municipio. Una cuenta habilitada que se
+  // desmadre —un script, un dedo trabado, una cuenta prestada— no puede
+  // gastar sin techo. El tope es holgado: una cuadrilla carga unas pocas
+  // planillas por jornada.
+  const desdeHaceUnaHora = new Date(Date.now() - 60 * 60 * 1000);
+  const recientes = await prisma.planilla.count({
+    where: { cargadaPorId: sesion.usuario.id, creadoEn: { gte: desdeHaceUnaHora } },
+  });
+  if (recientes >= LECTURAS_POR_HORA) {
+    return NextResponse.json(
+      {
+        error: `Se llegó al límite de ${LECTURAS_POR_HORA} planillas por hora. Esperá un rato y seguí; si necesitás cargar más, avisale a quien administra el sistema.`,
+      },
+      { status: 429 },
+    );
+  }
+
+  const archivoRuta = await guardarImagen(bytes, tipo);
 
   const planilla = await prisma.planilla.create({
     data: {
       estado: "PROCESANDO",
       archivoNombre: archivo.name || "planilla",
-      archivoTipo: archivo.type,
+      archivoTipo: tipo,
       archivoRuta,
+      cargadaPorId: sesion.usuario.id,
     },
   });
 
@@ -72,7 +95,7 @@ export async function POST(request: Request) {
     const catalogo = await listarMateriales();
     const { datos, modelo } = await analizarPlanilla(
       bytes.toString("base64"),
-      archivo.type,
+      tipo,
       catalogo
         .filter((m) => m.columnaImpresa)
         .map((m) => ({ nombre: m.nombre, grupo: m.grupo })),
@@ -156,9 +179,12 @@ export async function POST(request: Request) {
     const crudo =
       error instanceof Error ? error.message : "Error desconocido al analizar.";
 
+    // El texto para pantalla y el crudo van a campos distintos: el crudo
+    // habla de claves, cuotas y URLs internas, y no tiene por qué llegarle a
+    // quien está en la calle con el papel.
     await prisma.planilla.update({
       where: { id: planilla.id },
-      data: { estado: "ERROR", error: crudo },
+      data: { estado: "ERROR", error: mensaje, errorTecnico: crudo },
     });
     return NextResponse.json(
       { id: planilla.id, error: mensaje },

@@ -138,7 +138,14 @@ export async function PATCH(
     await tx.planilla.update({
       where: { id },
       data: cuerpo.data.confirmar
-        ? { estado: "CONFIRMADA", confirmadoEn: new Date() }
+        ? {
+            estado: "CONFIRMADA",
+            confirmadoEn: new Date(),
+            // Confirmar es el acto por el que alguien se hace responsable de
+            // que lo cargado coincide con el papel, y es lo que habilita el
+            // descuento de stock: queda registrado quién lo hizo.
+            confirmadaPorId: sesion.usuario.id,
+          }
         : { estado: "EN_REVISION" },
     });
     // Igual que en el alta: reescribir todas las filas de una planilla larga

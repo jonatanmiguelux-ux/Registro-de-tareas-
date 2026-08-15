@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leerImagen } from "@/lib/almacenamiento";
+import { detectarTipoImagen } from "@/lib/imagenes";
 import { usuarioDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
@@ -25,9 +26,19 @@ export async function GET(
 
   try {
     const bytes = await leerImagen(planilla.archivoRuta);
+
+    // El tipo se decide por el contenido del archivo, no por lo guardado en
+    // la base: las filas cargadas antes de que existiera la verificación
+    // guardaron lo que declaró el navegador, y de ahí sale esta cabecera.
+    const tipo = detectarTipoImagen(bytes) ?? "application/octet-stream";
+
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
-        "Content-Type": planilla.archivoTipo,
+        "Content-Type": tipo,
+        // Que el navegador la muestre y nunca la ejecute ni la trate como
+        // otra cosa, aunque el tipo fuera el equivocado.
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
         "Cache-Control": "private, max-age=31536000, immutable",
       },
     });

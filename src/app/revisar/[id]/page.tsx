@@ -13,7 +13,7 @@ export default async function PaginaRevisar({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requerirUsuario();
+  const usuario = await requerirUsuario();
   const { id } = await params;
 
   const [planilla, materiales, duplicados] = await Promise.all([
@@ -32,12 +32,25 @@ export default async function PaginaRevisar({
   if (planilla.estado === "ERROR") {
     return (
       <div className="mx-auto max-w-xl space-y-4">
-        <h1 className="titulo-pagina">
-          No se pudo leer la planilla
-        </h1>
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {planilla.error ?? "Error desconocido."}
+        <h1 className="titulo-pagina">No se pudo leer la planilla</h1>
+        <p className="rounded-lg border border-red-200 bg-[var(--color-mal-fondo)] px-4 py-3 text-sm text-[var(--color-mal)]">
+          {planilla.error ?? "No se pudo leer la planilla. Probá de nuevo."}
         </p>
+
+        {/* El detalle crudo del proveedor viene en inglés y menciona claves,
+            cuotas y URLs internas. Sirve para diagnosticar, así que se
+            muestra sólo a quien administra, y plegado. */}
+        {usuario.rol === "ADMINISTRADOR" && planilla.errorTecnico && (
+          <details className="tarjeta overflow-hidden">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+              Detalle técnico
+            </summary>
+            <pre className="overflow-x-auto border-t border-[var(--color-borde)] bg-[var(--color-fondo)] px-4 py-3 text-xs whitespace-pre-wrap">
+              {planilla.errorTecnico}
+            </pre>
+          </details>
+        )}
+
         <Link href="/" className="boton-primario">
           Probar con otra foto
         </Link>

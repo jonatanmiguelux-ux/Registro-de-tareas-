@@ -29,6 +29,11 @@ const ETIQUETAS: Record<string, { texto: string; clase: string }> = {
   },
 };
 
+/** El nombre de pila alcanza para saber quién fue, y no llena el renglón. */
+function nombreCorto(persona: { name: string | null; email: string | null }) {
+  return persona.name?.split(" ")[0] ?? persona.email?.split("@")[0] ?? "alguien";
+}
+
 /** Agrupa por el día de la planilla; si no tiene fecha, por el día de carga. */
 function diaDe(planilla: { fecha: Date | null; creadoEn: Date }): string {
   return planilla.fecha
@@ -50,7 +55,14 @@ export default async function PaginaRegistros({
     prisma.planilla.findMany({
       where: wherePlanilla(filtros),
       orderBy: [{ fecha: "desc" }, { creadoEn: "desc" }],
-      include: { _count: { select: { reclamos: true } } },
+      include: {
+        _count: { select: { reclamos: true } },
+        // Quién la cargó y quién la confirmó: en un sistema del municipio,
+        // poder responder "¿quién dio por buena esta planilla?" importa tanto
+        // como el dato en sí.
+        cargadaPor: { select: { name: true, email: true } },
+        confirmadaPor: { select: { name: true, email: true } },
+      },
     }),
     cuadrillas(),
     // Cuando se busca un incidente, lo útil es ver el reclamo directo,
@@ -198,6 +210,10 @@ export default async function PaginaRegistros({
                             {planilla.oficial && ` · ${planilla.oficial}`}
                             {" · cargada el "}
                             {formatearMomento(planilla.creadoEn)}
+                            {planilla.cargadaPor &&
+                              ` por ${nombreCorto(planilla.cargadaPor)}`}
+                            {planilla.confirmadaPor &&
+                              ` · confirmada por ${nombreCorto(planilla.confirmadaPor)}`}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">

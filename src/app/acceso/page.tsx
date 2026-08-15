@@ -21,8 +21,15 @@ export default async function PaginaAcceso({
   // A la pantalla de cargar no se puede mandar directo a alguien recién
   // logueado: es estática y no sabe si la cuenta está habilitada. Va a
   // /entrando, que lo averigua y lo manda a donde corresponda.
+  //
+  // El destino viene por la URL, así que se acepta sólo si es una ruta de
+  // este sitio. Sin este filtro, un enlace preparado podría usar el login
+  // como trampolín: la persona entra creyendo que va a la app y termina en
+  // otra página, ya con la sesión abierta.
   const pedida = typeof params.volver === "string" ? params.volver : "/";
-  const volver = pedida === "/" ? "/entrando" : pedida;
+  const esRutaPropia =
+    pedida.startsWith("/") && !pedida.startsWith("//") && !pedida.includes("\\");
+  const volver = !esRutaPropia || pedida === "/" ? "/entrando" : pedida;
   const error = typeof params.error === "string" ? params.error : null;
 
   return (

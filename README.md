@@ -467,6 +467,32 @@ El manifiesto, el service worker y los íconos quedan fuera del portón a
 propósito: el navegador los pide **sin credenciales**, y si respondieran con
 una redirección al login la app no se podría instalar en el celular.
 
+### Lo demás que protege la app
+
+- **Cabeceras de seguridad en todas las respuestas**, incluida una política
+  de contenido con nonce por petición: si algún día se colara texto de una
+  planilla que en realidad es código, el navegador se niega a ejecutarlo.
+  También se bloquea que otro sitio muestre la app dentro de un marco para
+  engañar a alguien y hacerle tocar botones que no ve.
+- **Las fotos se verifican por su contenido**, no por lo que declara el
+  navegador: ese dato lo pone quien sube y se puede falsear. El formato se
+  reconoce por la firma de los primeros bytes, y de ahí en adelante se usa el
+  tipo detectado. Un archivo cualquiera renombrado a `.jpg` no entra.
+- **Tope de 40 lecturas por hora y por persona.** Cada una le cuesta plata al
+  municipio; una cuenta que se desmadre no puede gastar sin techo.
+- **Quién cargó y quién confirmó cada planilla** queda registrado y se ve en
+  el historial. Confirmar es el acto por el que alguien se hace responsable de
+  que lo cargado coincide con el papel, y es lo que habilita el descuento de
+  stock.
+- **El detalle técnico de un fallo no se muestra en pantalla.** Esos textos
+  vienen en inglés y mencionan claves, cuotas y URLs internas; van a un campo
+  aparte que sólo ven los administradores.
+- **El destino al que se vuelve después de entrar se valida.** Sin ese filtro,
+  un enlace preparado podría usar el login como trampolín hacia otra página.
+
+Dar de baja a alguien nunca borra sus planillas: el vínculo queda en nulo y el
+histórico sigue entero. El histórico es el activo del sistema, no las cuentas.
+
 ## Para ampliar
 
 Lo obvio que sigue, en orden de utilidad:
