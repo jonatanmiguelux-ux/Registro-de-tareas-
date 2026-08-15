@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import type { Material, Prisma } from "@prisma/client";
 import { formatearFecha } from "@/lib/fechas";
 import type { ConsumoMaterial } from "@/lib/consultas";
+import { agruparPorLocalidad, compararLocalidades } from "@/lib/localidades";
 
 type ReclamoExportado = Prisma.ReclamoGetPayload<{
   include: { materiales: true; planilla: true };
@@ -34,6 +35,12 @@ const CAMPOS = [
  * - "Materiales": una fila por cada material usado en cada reclamo. Es la
  *   vista larga, la que sirve para tablas dinámicas.
  * - "Consumo": el total por tipo de material del período exportado, ya sumado.
+ * - "Por localidad": cuánto se hizo y cuánto se gastó en cada localidad.
+ *
+ * Las filas salen **agrupadas por localidad**, en el orden en que las nombra
+ * el municipio, y dentro de cada una por fecha. Da igual cómo estuviera
+ * escrita en el papel: el nombre ya viene normalizado desde la carga, así que
+ * "ST", "St" y "Santa Teresita" caen en el mismo grupo.
  */
 export async function construirLibro(
   reclamos: ReclamoExportado[],
@@ -44,6 +51,10 @@ export async function construirLibro(
   libro.creator = "Registro de tareas";
   libro.created = new Date();
 
+  // Un solo ordenamiento para todas las hojas, así la "Reclamos" y la
+  // "Materiales" se recorren en paralelo sin sorpresas.
+  const ordenados = ordenarPorLocalidad(reclamos);
+
   const hojaReclamos = libro.addWorksheet("Reclamos", {
     views: [{ state: "frozen", ySplit: 1 }],
   });
@@ -53,7 +64,7 @@ export async function construirLibro(
     ...materiales.map((m) => ({ header: m.nombre, width: 14 })),
   ];
 
-  for (const reclamo of reclamos) {
+  for (const reclamo of ordenados) {
     const porMaterial = new Map(
       reclamo.materiales.map((m) => [m.materialId, m.cantidad]),
     );
@@ -98,7 +109,7 @@ export async function construirLibro(
 
   const catalogo = new Map(materiales.map((m) => [m.id, m]));
 
-  for (const reclamo of reclamos) {
+  for (const reclamo of ordenados) {
     for (const marca of reclamo.materiales) {
       const material = catalogo.get(marca.materialId);
       if (!material) continue;
@@ -151,7 +162,14 @@ export async function construirLibro(
     total.font = { bold: true };
   }
 
-  for (const hoja of [hojaReclamos, hojaMateriales, hojaConsumo]) {
+  const hojaLocalidades = construirHojaLocalidades(libro, ordenados, catalogo);
+
+  for (const hoja of [
+    hojaReclamos,
+    hojaMateriales,
+    hojaConsumo,
+    hojaLocalidades,
+  ]) {
     hoja.getRow(1).font = { bold: true };
     hoja.getRow(1).fill = {
       type: "pattern",
@@ -166,4 +184,120 @@ export async function construirLibro(
 
   const datos = await libro.xlsx.writeBuffer();
   return Buffer.from(datos);
+}
+
+/**
+ * Ordena los reclamos por localidad y, dentro de cada una, por fecha.
+ *
+ * El desempate final es el N.º de incidente y no el orden en que estaban en
+ * el papel: dos planillas del mismo día en la misma localidad quedarían
+ * intercaladas de forma arbitraria, y así al menos el orden es reproducible
+ * —el mismo período exportado dos veces da el mismo archivo—.
+ */
+function ordenarPorLocalidad(
+  reclamos: ReclamoExportado[],
+): ReclamoExportado[] {
+  return [...reclamos].sort((a, b) => {
+    const porLocalidad = compararLocalidades(a.localidad, b.localidad);
+    if (porLocalidad !== 0) return porLocalidad;
+
+    const fechaA = a.fecha?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const fechaB = b.fecha?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    if (fechaA !== fechaB) return fechaA - fechaB;
+
+    return (a.nroIncidente ?? "").localeCompare(b.nroIncidente ?? "", "es");
+  });
+}
+
+/**
+ * Hoja "Por localidad": una fila por localidad, con lo que se hizo y lo que
+ * se gastó ahí.
+ *
+ * Es la vista que responde "¿dónde se está yendo el material?" sin tener que
+ * armar una tabla dinámica. Las columnas de material son las mismas de la
+ * hoja "Reclamos", así se pueden comparar de costado.
+ */
+function construirHojaLocalidades(
+  libro: ExcelJS.Workbook,
+  reclamos: ReclamoExportado[],
+  catalogo: Map<string, Material>,
+): ExcelJS.Worksheet {
+  const hoja = libro.addWorksheet("Por localidad", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+
+  // Sólo los materiales que realmente se usaron: una hoja con veinte columnas
+  // en cero no se lee.
+  const usados = [...catalogo.values()].filter((m) =>
+    reclamos.some((r) => r.materiales.some((x) => x.materialId === m.id)),
+  );
+
+  hoja.columns = [
+    { header: "Localidad", width: 20 },
+    { header: "Reclamos", width: 11 },
+    { header: "Con material", width: 13 },
+    { header: "Materiales usados", width: 18 },
+    { header: "Días con trabajo", width: 16 },
+    ...usados.map((m) => ({ header: m.nombre, width: 14 })),
+  ];
+
+  const grupos = agruparPorLocalidad(reclamos, (r) => r.localidad);
+
+  for (const grupo of grupos) {
+    const porMaterial = new Map<string, number>();
+    let conMaterial = 0;
+    const dias = new Set<string>();
+
+    for (const reclamo of grupo.filas) {
+      if (reclamo.materiales.length > 0) conMaterial++;
+      if (reclamo.fecha) dias.add(reclamo.fecha.toISOString().slice(0, 10));
+      for (const marca of reclamo.materiales) {
+        porMaterial.set(
+          marca.materialId,
+          (porMaterial.get(marca.materialId) ?? 0) + marca.cantidad,
+        );
+      }
+    }
+
+    const total = [...porMaterial.values()].reduce((t, c) => t + c, 0);
+
+    hoja.addRow([
+      grupo.localidad,
+      grupo.filas.length,
+      conMaterial,
+      total,
+      dias.size,
+      ...usados.map((m) => porMaterial.get(m.id) ?? ""),
+    ]);
+  }
+
+  if (grupos.length > 0) {
+    const fila = hoja.addRow([
+      "TOTAL",
+      reclamos.length,
+      reclamos.filter((r) => r.materiales.length > 0).length,
+      reclamos.reduce(
+        (t, r) => t + r.materiales.reduce((s, m) => s + m.cantidad, 0),
+        0,
+      ),
+      new Set(
+        reclamos
+          .filter((r) => r.fecha)
+          .map((r) => r.fecha!.toISOString().slice(0, 10)),
+      ).size,
+      ...usados.map((m) =>
+        reclamos.reduce(
+          (t, r) =>
+            t +
+            r.materiales
+              .filter((x) => x.materialId === m.id)
+              .reduce((s, x) => s + x.cantidad, 0),
+          0,
+        ),
+      ),
+    ]);
+    fila.font = { bold: true };
+  }
+
+  return hoja;
 }

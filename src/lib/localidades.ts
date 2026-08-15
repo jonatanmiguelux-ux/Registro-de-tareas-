@@ -49,3 +49,79 @@ export function normalizarLocalidad(valor: string | null): string | null {
   const sigla = texto.toLowerCase().replace(/[\s.]/g, "");
   return POR_SIGLA[sigla] ?? texto;
 }
+
+/** Etiqueta para las filas que no traen localidad legible. */
+export const SIN_LOCALIDAD = "Sin localidad";
+
+/**
+ * Orden en que se listan las localidades.
+ *
+ * Es el orden en que las nombra el municipio, no el alfabético: así el Excel
+ * sale con el mismo recorrido con el que se piensa el partido. Para cambiarlo
+ * alcanza con reordenar `POR_SIGLA` arriba.
+ *
+ * Lo que no está en la lista va después, alfabético entre sí, y las filas sin
+ * localidad al final de todo: son las que hay que completar a mano, y sueltas
+ * al final se ven de una.
+ */
+const ORDEN = new Map(
+  Object.values(POR_SIGLA).map((nombre, indice) => [nombre, indice]),
+);
+
+export function ordenDeLocalidad(nombre: string | null): number {
+  if (!nombre?.trim()) return Number.MAX_SAFE_INTEGER;
+  return ORDEN.get(nombre) ?? Number.MAX_SAFE_INTEGER - 1;
+}
+
+/**
+ * Compara dos localidades para ordenar.
+ *
+ * Las conocidas van en el orden del municipio; las que no reconocemos, entre
+ * ellas, alfabéticamente; las vacías, al final.
+ */
+export function compararLocalidades(
+  a: string | null,
+  b: string | null,
+): number {
+  const ordenA = ordenDeLocalidad(a);
+  const ordenB = ordenDeLocalidad(b);
+  if (ordenA !== ordenB) return ordenA - ordenB;
+  return (a ?? "").localeCompare(b ?? "", "es");
+}
+
+export type GrupoLocalidad<T> = {
+  /** Nombre completo, o "Sin localidad" si la fila no traía nada. */
+  localidad: string;
+  filas: T[];
+};
+
+/**
+ * Agrupa filas por localidad, sin importar cómo venía escrita en el papel.
+ *
+ * El valor ya llega normalizado desde la carga (`normalizarLocalidad`), así
+ * que "ST", "St" y "Santa Teresita" son la misma cosa mucho antes de llegar
+ * acá. Esta función se ocupa sólo de juntar y de poner los grupos en orden.
+ */
+export function agruparPorLocalidad<T>(
+  filas: T[],
+  obtenerLocalidad: (fila: T) => string | null,
+): GrupoLocalidad<T>[] {
+  const grupos = new Map<string, T[]>();
+
+  for (const fila of filas) {
+    const cruda = obtenerLocalidad(fila)?.trim();
+    const clave = cruda ? normalizarLocalidad(cruda)! : SIN_LOCALIDAD;
+    const actual = grupos.get(clave);
+    if (actual) actual.push(fila);
+    else grupos.set(clave, [fila]);
+  }
+
+  return [...grupos]
+    .map(([localidad, filas]) => ({ localidad, filas }))
+    .sort((a, b) =>
+      compararLocalidades(
+        a.localidad === SIN_LOCALIDAD ? null : a.localidad,
+        b.localidad === SIN_LOCALIDAD ? null : b.localidad,
+      ),
+    );
+}

@@ -294,10 +294,33 @@ mantiene `planillaId` y `soloConfirmadas=1` por compatibilidad.
   Es la vista larga, la que sirve para tablas dinámicas.
 - **Hoja "Consumo"** — el total por tipo de material del período, ya sumado,
   con su renglón de TOTAL.
+- **Hoja "Por localidad"** — una fila por localidad: cuántos reclamos, cuántos
+  llevaron material, cuánto se gastó y en cuántos días. Responde "¿dónde se
+  está yendo el material?" sin armar una tabla dinámica.
 
-Las tres salen con autofiltro y encabezado fijo. Para exportar un solo día,
+Las cuatro salen con autofiltro y encabezado fijo. Para exportar un solo día,
 `desde` y `hasta` con la misma fecha (el botón "Excel del día" del resumen
 diario ya lo hace).
+
+### Todo sale agrupado por localidad
+
+Las filas se ordenan **por localidad** y, dentro de cada una, por fecha.
+Da igual cómo estuviera escrita en el papel: al cargar, la sigla se convierte
+al nombre completo, así que `ST`, `St` y `Santa Teresita` caen las tres en el
+mismo grupo.
+
+El orden de las localidades es el que usa el municipio (el de la lista de más
+arriba), no el alfabético: así el Excel sale con el mismo recorrido con el que
+se piensa el partido. Se cambia reordenando una sola lista en
+`src/lib/localidades.ts`.
+
+Las localidades que no están en esa lista se respetan y van después de las
+conocidas; las filas sin localidad quedan al final de todo, que es donde se
+ven de una para completarlas a mano.
+
+Dentro de cada localidad el desempate final es el N.º de incidente y no el
+orden del papel, para que exportar dos veces el mismo período dé el mismo
+archivo.
 
 ## Cómo se define cada cosa
 
