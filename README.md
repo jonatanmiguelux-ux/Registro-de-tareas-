@@ -197,6 +197,11 @@ Si no coinciden carácter por carácter, Google rechaza el login con
 `redirect_uri_mismatch`. Es el error más común al desplegar, y el mensaje no
 aclara cuál es la diferencia.
 
+En la consola de Google esas dos claves se llaman "ID de cliente" y "Secreto
+del cliente"; en el `.env` van como `AUTH_GOOGLE_ID` y `AUTH_GOOGLE_SECRET`,
+que son los nombres que espera Auth.js. Si las cargás con el nombre que usa
+Google, la app no las encuentra y el botón de entrar no hace nada.
+
 Y en la pantalla de consentimiento hay que **publicar la aplicación**: en modo
 "Prueba" sólo entran los correos cargados a mano en la lista de usuarios de
 prueba, y las sesiones se caen cada 7 días. Como no se piden permisos
