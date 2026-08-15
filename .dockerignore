@@ -1,0 +1,20 @@
+node_modules
+.next
+.git
+.gitignore
+
+# Las claves nunca entran a la imagen: van por variables de entorno.
+.env
+.env.local
+.env*.local
+.env.production
+
+uploads/
+copias/
+certificates/
+
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+README.md

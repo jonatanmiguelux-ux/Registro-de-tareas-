@@ -1,0 +1,101 @@
+# Despliegue de producción: app + base + servidor web con HTTPS.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# La base no publica puertos al exterior: se llega a ella sólo desde adentro
+# de la red de Docker. Para mirarla desde tu máquina, túnel SSH:
+#   ssh -L 5433:localhost:5432 usuario@servidor
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: registro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}
+      POSTGRES_DB: registro_tareas
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registro -d registro_tareas"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Corre una vez, aplica las migraciones pendientes y carga el catálogo de
+  # materiales, y termina. La app no arranca hasta que esto haya salido bien:
+  # es preferible que la app no esté disponible a que atienda contra una base
+  # con la forma equivocada.
+  migraciones:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migraciones
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://registro:${POSTGRES_PASSWORD}@db:5432/registro_tareas?schema=public
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migraciones:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://registro:${POSTGRES_PASSWORD}@db:5432/registro_tareas?schema=public
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?falta GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      UPLOAD_DIR: /datos/uploads
+    volumes:
+      # Las fotos originales. Sobreviven a cada actualización de la app: son
+      # la única forma de auditar un dato contra el papel.
+      - fotos:/datos/uploads
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO:?falta DOMINIO}
+      USUARIO: ${USUARIO:-cuadrilla}
+      CLAVE_HASH: ${CLAVE_HASH:?falta CLAVE_HASH}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Los certificados: sin esto Let's Encrypt se pide de nuevo en cada
+      # reinicio y se llega al límite de emisiones.
+      - caddy-datos:/data
+      - caddy-config:/config
+
+  # Copia diaria de la base. Sin esto, un disco roto se lleva todo el
+  # histórico de planillas, que es justamente lo que la app viene a conservar.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      RETENCION_DIAS: ${RETENCION_DIAS:-14}
+    volumes:
+      - ./copias:/copias
+      - ./docker/copiar.sh:/copiar.sh:ro
+    entrypoint: ["/bin/sh", "/copiar.sh"]
+
+volumes:
+  datos:
+  fotos:
+  caddy-datos:
+  caddy-config:

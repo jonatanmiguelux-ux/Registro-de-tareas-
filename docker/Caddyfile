@@ -1,0 +1,44 @@
+# Servidor web de producción.
+#
+# Caddy saca y renueva el certificado HTTPS solo con Let's Encrypt, con sólo
+# apuntar el dominio a la IP del servidor. No hay que tocar nada más: sin
+# HTTPS los celulares no habilitan la cámara ni instalan la app.
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Tope de cuerpo, un poco arriba del límite de 20 MB que valida la app:
+	# así una foto enorme se rechaza acá y no ocupa memoria del servidor.
+	request_body {
+		max_size 25MB
+	}
+
+	# Lo que tiene que ser público aunque el resto esté con contraseña.
+	#
+	# El navegador pide el manifiesto y los íconos SIN credenciales, así que
+	# si quedaran detrás de la contraseña la app no se podría instalar: el
+	# botón de "Instalar aplicación" directamente no aparecería. No son datos
+	# sensibles, son el nombre y el dibujo del ícono.
+	@publico path /manifest.webmanifest /sw.js /sin-conexion.html /icono/*
+	handle @publico {
+		reverse_proxy app:3000
+	}
+
+	handle {
+		# Una sola clave compartida para toda la cuadrilla: nadie se registra
+		# ni tiene cuenta propia. Es lo mínimo para que la app no quede
+		# abierta a internet, sin poner una pantalla de acceso entre el
+		# operario y la cámara.
+		basic_auth {
+			{$USUARIO} {$CLAVE_HASH}
+		}
+
+		# La lectura de una planilla tarda entre 20 y 40 segundos.
+		reverse_proxy app:3000 {
+			transport http {
+				response_header_timeout 5m
+				read_timeout 5m
+			}
+		}
+	}
+}
