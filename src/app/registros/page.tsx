@@ -10,10 +10,22 @@ import { BorrarPlanilla } from "@/components/BorrarPlanilla";
 export const dynamic = "force-dynamic";
 
 const ETIQUETAS: Record<string, { texto: string; clase: string }> = {
-  PROCESANDO: { texto: "Procesando", clase: "bg-slate-100 text-slate-700" },
-  EN_REVISION: { texto: "En revisión", clase: "bg-amber-100 text-amber-800" },
-  CONFIRMADA: { texto: "Confirmada", clase: "bg-green-100 text-green-800" },
-  ERROR: { texto: "Error", clase: "bg-red-100 text-red-800" },
+  PROCESANDO: {
+    texto: "Procesando",
+    clase: "bg-slate-100 text-[var(--color-tinta-2)]",
+  },
+  EN_REVISION: {
+    texto: "En revisión",
+    clase: "bg-[var(--color-alerta-fondo)] text-[var(--color-alerta)]",
+  },
+  CONFIRMADA: {
+    texto: "Confirmada",
+    clase: "bg-[var(--color-bien-fondo)] text-[var(--color-bien)]",
+  },
+  ERROR: {
+    texto: "Error",
+    clase: "bg-[var(--color-mal-fondo)] text-[var(--color-mal)]",
+  },
 };
 
 /** Agrupa por el día de la planilla; si no tiene fecha, por el día de carga. */
@@ -63,11 +75,11 @@ export default async function PaginaRegistros({
   const totalReclamos = planillas.reduce((t, p) => t + p._count.reclamos, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Registros</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="titulo-pagina">Registros</h1>
+          <p className="bajada mt-1.5">
             {planillas.length} planilla{planillas.length === 1 ? "" : "s"} ·{" "}
             {totalReclamos} reclamo{totalReclamos === 1 ? "" : "s"}
             {hayFiltros(filtros) && " (con filtros aplicados)"}
@@ -80,30 +92,38 @@ export default async function PaginaRegistros({
 
       {filtros.incidente && (
         <section className="tarjeta overflow-hidden">
-          <h2 className="border-b border-[var(--color-borde)] px-4 py-3 text-sm font-semibold">
-            Reclamos con incidente “{filtros.incidente}” ({coincidencias.length})
-          </h2>
+          <div className="tarjeta-titulo">
+            <h2 className="text-sm font-semibold">
+              Reclamos con incidente “{filtros.incidente}”
+            </h2>
+            <span className="text-xs text-[var(--color-tinta-3)]">
+              {coincidencias.length} encontrado
+              {coincidencias.length === 1 ? "" : "s"}
+            </span>
+          </div>
           {coincidencias.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-slate-600">
+            <p className="px-4 py-8 text-center text-sm text-[var(--color-tinta-3)]">
               No hay ningún reclamo con ese número.
             </p>
           ) : (
             <ul className="divide-y divide-[var(--color-borde)]">
               {coincidencias.map((r) => (
-                <li key={r.id} className="px-4 py-3">
+                <li key={r.id} className="transition hover:bg-slate-50/70">
                   <Link
                     href={`/revisar/${r.planilla.id}`}
-                    className="block hover:opacity-80"
+                    className="block px-4 py-3"
                   >
                     <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                      <span>N.º {r.nroIncidente}</span>
-                      <span className="text-slate-400">·</span>
+                      <span className="tabular-nums">N.º {r.nroIncidente}</span>
+                      <span className="text-[var(--color-borde-fuerte)]">·</span>
                       <span>{[r.calle, r.numero].filter(Boolean).join(" ")}</span>
                       {r.localidad && (
-                        <span className="text-slate-500">({r.localidad})</span>
+                        <span className="text-[var(--color-tinta-3)]">
+                          ({r.localidad})
+                        </span>
                       )}
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-[var(--color-tinta-3)]">
                       {formatearFecha(r.fecha)}
                       {r.tipoReclamo && ` · ${r.tipoReclamo}`}
                       {r.movil && ` · Móvil ${r.movil}`}
@@ -122,8 +142,8 @@ export default async function PaginaRegistros({
       )}
 
       {planillas.length === 0 ? (
-        <div className="tarjeta px-4 py-10 text-center">
-          <p className="text-sm text-slate-600">
+        <div className="tarjeta px-4 py-14 text-center">
+          <p className="text-sm text-[var(--color-tinta-2)]">
             {hayFiltros(filtros)
               ? "Ninguna planilla coincide con los filtros."
               : "Todavía no cargaste ninguna planilla."}
@@ -141,10 +161,10 @@ export default async function PaginaRegistros({
             return (
               <section key={dia}>
                 <div className="mb-2 flex items-baseline justify-between gap-3">
-                  <h2 className="text-sm font-semibold text-slate-700">
+                  <h2 className="text-sm font-semibold">
                     {formatearFecha(dia)}
                   </h2>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-[var(--color-tinta-3)]">
                     {delDia.length} planilla{delDia.length === 1 ? "" : "s"} ·{" "}
                     {reclamosDelDia} reclamo{reclamosDelDia === 1 ? "" : "s"}
                   </span>
@@ -157,20 +177,18 @@ export default async function PaginaRegistros({
                     return (
                       <div
                         key={planilla.id}
-                        className="flex flex-wrap items-center gap-3 px-4 py-3"
+                        className="flex flex-wrap items-center gap-3 px-4 py-3 transition hover:bg-slate-50/70"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="truncate text-sm font-medium">
                               {planilla.archivoNombre}
                             </span>
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${etiqueta.clase}`}
-                            >
+                            <span className={`etiqueta ${etiqueta.clase}`}>
                               {etiqueta.texto}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-[var(--color-tinta-3)]">
                             {planilla._count.reclamos} reclamo
                             {planilla._count.reclamos === 1 ? "" : "s"}
                             {planilla.movil && ` · Móvil ${planilla.movil}`}
@@ -182,7 +200,7 @@ export default async function PaginaRegistros({
                         <div className="flex shrink-0 items-center gap-2">
                           <Link
                             href={`/revisar/${planilla.id}`}
-                            className="boton-secundario px-3 py-2"
+                            className="boton-secundario min-h-0 px-3 py-2 text-xs"
                           >
                             {planilla.estado === "CONFIRMADA" ? "Ver" : "Revisar"}
                           </Link>

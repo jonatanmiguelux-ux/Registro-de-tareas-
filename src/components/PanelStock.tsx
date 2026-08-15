@@ -83,8 +83,8 @@ export function PanelStock({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Stock</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="titulo-pagina">Stock</h1>
+        <p className="mt-1 text-sm text-[var(--color-tinta-2)]">
           El consumo se descuenta solo desde las planillas confirmadas. Cargá
           acá únicamente lo que no pasa por una planilla: compras que entran al
           depósito, roturas, traspasos.
@@ -100,12 +100,12 @@ export function PanelStock({
       )}
 
       <form onSubmit={registrarMovimiento} className="tarjeta p-4">
-        <h2 className="text-sm font-semibold text-slate-700">
+        <h2 className="text-sm font-semibold text-[var(--color-tinta)]">
           Registrar movimiento
         </h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <label className="block lg:col-span-2">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
               Material
             </span>
             <select
@@ -123,7 +123,7 @@ export function PanelStock({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
               Tipo
             </span>
             <select
@@ -137,7 +137,7 @@ export function PanelStock({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
               Cantidad
             </span>
             <input
@@ -152,7 +152,7 @@ export function PanelStock({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
               Fecha
             </span>
             <input
@@ -164,7 +164,7 @@ export function PanelStock({
           </label>
 
           <label className="block sm:col-span-2 lg:col-span-4">
-            <span className="mb-1 block text-xs font-medium text-slate-600">
+            <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
               Nota (opcional)
             </span>
             <input
@@ -194,7 +194,7 @@ export function PanelStock({
         <div className="overflow-x-auto">
           <table className="w-full min-w-[46rem] text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-borde)] text-left text-xs font-medium text-slate-600">
+              <tr className="border-b border-[var(--color-borde)] text-left text-xs font-medium text-[var(--color-tinta-2)]">
                 <th className="px-4 py-2">Material</th>
                 <th className="px-4 py-2 text-right">Inicial</th>
                 <th className="px-4 py-2 text-right">Entradas</th>
@@ -209,7 +209,7 @@ export function PanelStock({
                   <td className="px-4 py-2">
                     <span className="font-medium">{s.nombre}</span>
                     {s.grupo && (
-                      <span className="ml-2 text-xs text-slate-500">{s.grupo}</span>
+                      <span className="ml-2 text-xs text-[var(--color-tinta-3)]">{s.grupo}</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
@@ -239,10 +239,10 @@ export function PanelStock({
                   <td className="px-4 py-2 text-right tabular-nums text-green-700">
                     {s.entradas > 0 ? `+${s.entradas}` : "—"}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">
+                  <td className="px-4 py-2 text-right tabular-nums text-[var(--color-tinta-2)]">
                     {s.salidas > 0 ? `−${s.salidas}` : "—"}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-600">
+                  <td className="px-4 py-2 text-right tabular-nums text-[var(--color-tinta-2)]">
                     {s.consumo > 0 ? `−${s.consumo}` : "—"}
                   </td>
                   <td
@@ -256,7 +256,7 @@ export function PanelStock({
                   >
                     {s.stockActual}
                     {s.unidad && (
-                      <span className="ml-1 text-xs font-normal text-slate-500">
+                      <span className="ml-1 text-xs font-normal text-[var(--color-tinta-3)]">
                         {s.unidad}
                       </span>
                     )}
@@ -266,7 +266,7 @@ export function PanelStock({
             </tbody>
           </table>
         </div>
-        <p className="border-t border-[var(--color-borde)] px-4 py-2 text-xs text-slate-500">
+        <p className="border-t border-[var(--color-borde)] px-4 py-2 text-xs text-[var(--color-tinta-3)]">
           Actual = inicial + entradas − salidas − consumo. Tocá el número de
           “Inicial” para corregirlo.
         </p>
@@ -277,7 +277,7 @@ export function PanelStock({
           Últimos movimientos
         </h2>
         {movimientos.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-slate-600">
+          <p className="px-4 py-8 text-center text-sm text-[var(--color-tinta-2)]">
             Todavía no cargaste movimientos de depósito.
           </p>
         ) : (
@@ -291,7 +291,7 @@ export function PanelStock({
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                     m.tipo === "ENTRADA"
                       ? "bg-green-100 text-green-800"
-                      : "bg-slate-100 text-slate-700"
+                      : "bg-slate-100 text-[var(--color-tinta)]"
                   }`}
                 >
                   {m.tipo === "ENTRADA" ? "Entrada" : "Salida"}
@@ -303,14 +303,14 @@ export function PanelStock({
                     {m.cantidad}
                     {m.unidad && ` ${m.unidad}`}
                   </span>
-                  <span className="ml-2 text-xs text-slate-500">
+                  <span className="ml-2 text-xs text-[var(--color-tinta-3)]">
                     {formatearFecha(m.fecha)}
                     {m.nota && ` · ${m.nota}`}
                   </span>
                 </span>
                 <button
                   type="button"
-                  className="shrink-0 text-xs text-slate-500 hover:text-red-700"
+                  className="shrink-0 text-xs text-[var(--color-tinta-3)] hover:text-red-700"
                   disabled={guardando}
                   onClick={() => llamar("DELETE", { id: m.id })}
                 >
@@ -367,7 +367,7 @@ function EditarInicial({
       >
         OK
       </button>
-      <button type="button" className="text-xs text-slate-500" onClick={onCancelar}>
+      <button type="button" className="text-xs text-[var(--color-tinta-3)]" onClick={onCancelar}>
         ✕
       </button>
     </span>

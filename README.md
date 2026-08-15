@@ -129,13 +129,59 @@ cp .env.example .env
 
 # 3. Dependencias y esquema
 npm install
-npm run db:push
+npm run db:deploy   # aplica las migraciones
+npm run db:seed     # carga el catálogo de materiales
 
 # 4. A andar
 npm run dev
 ```
 
 Abrí http://localhost:3000
+
+Para cambiar el esquema en desarrollo, `npm run db:migrate` (genera la
+migración y la aplica). `db:push` sigue estando pero sólo para probar una idea:
+no deja rastro y puede perder datos.
+
+## Ponerlo en producción
+
+Un VPS chico alcanza sobrado. Todo va con Docker Compose: la app, Postgres,
+Caddy —que saca y renueva el certificado HTTPS solo— y las copias de la base.
+
+```bash
+# En el servidor, con el repo clonado:
+cp .env.production.example .env.production
+#    completá dominio, claves y contraseñas
+
+# La contraseña de acceso se guarda hasheada:
+docker run --rm caddy:2-alpine caddy hash-password --plaintext 'la-clave'
+
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+Antes de levantar, el dominio tiene que estar apuntando a la IP del servidor:
+Caddy pide el certificado la primera vez que alguien entra, y si el DNS todavía
+no propagó, falla.
+
+**Cómo está armado.** Las migraciones corren en un contenedor aparte que se
+ejecuta una vez y termina; la app no arranca hasta que ese contenedor haya
+salido bien, así nunca atiende contra una base con la forma equivocada. Las
+fotos originales viven en un volumen, no en la imagen, para que sobrevivan a
+cada actualización. Y la base se copia una vez por día a `./copias/`, que es lo
+único que hay entre un disco roto y perder todo el histórico.
+
+**Por qué no serverless.** Vercel y parecidos no sirven acá por dos motivos
+concretos: el disco es efímero y las fotos se perderían —quedarían planillas
+apuntando a archivos que ya no existen, y se pierde poder auditar contra el
+papel—, y la lectura de una planilla tarda entre 20 y 40 segundos, arriba del
+tope de esos planes.
+
+**El acceso.** Una sola contraseña compartida a nivel del servidor web: nadie
+se registra ni tiene cuenta propia (ver "Sin login, a propósito"). El
+manifiesto, el ícono y el service worker quedan fuera de la contraseña a
+propósito: el navegador los pide sin credenciales, y si estuvieran protegidos
+la app no se podría instalar.
+
+Para actualizar: `git pull` y repetir el `up -d --build`.
 
 ## Desde el celular
 
@@ -204,8 +250,13 @@ src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx
 src/lib/materiales.ts       Catálogo de columnas, con alta automática
 src/lib/cola.ts             Cola de fotos sin señal (IndexedDB)
+src/components/graficos.tsx Barras y columnas del tablero, en HTML y CSS
+src/app/globals.css         Sistema de diseño: colores, tipografía, controles
 src/app/manifest.ts         Manifiesto de la PWA (instalación en el celular)
 public/sw.js                Service worker: sólo cachea estáticos, nunca datos
+Dockerfile                  Imagen de producción
+docker-compose.prod.yml     Despliegue: app, base, Caddy y copias
+docker/Caddyfile            HTTPS automático y contraseña de acceso
 src/app/page.tsx            Cargar
 src/app/revisar/[id]/       Revisar y corregir
 src/app/registros/          Histórico y exportación
@@ -276,6 +327,26 @@ Tres decisiones que conviene tener presentes al leer los números:
 
 Por eso los materiales gastados en un reclamo **no** se cargan además como
 salida: se restarían dos veces.
+
+## La interfaz
+
+Dos criterios mandan sobre el gusto, porque esta app se usa parada en la calle
+con el celular en una mano y la planilla de papel en la otra:
+
+- **Contraste alto.** Se lee al sol. Los grises tibios que se estilan
+  desaparecen con luz directa, así que el texto secundario acá es más oscuro
+  de lo que se usa.
+- **Blancos que se puedan tocar.** Ningún control baja de 44 píxeles de alto,
+  que es lo que mide un dedo. En el celular la navegación va abajo, donde
+  llega el pulgar de la mano que sostiene el teléfono.
+
+Es sólo en claro, a propósito: se usa de día, a la intemperie, y un modo
+oscuro a medio hacer se ve peor que no tenerlo.
+
+Los colores de los gráficos del tablero no se eligieron a ojo. Son tres, uno
+por grupo de material, y están verificados para que se distingan entre sí
+también con daltonismo. Aun así, ninguna barra depende sólo del color: todas
+llevan su nombre y su número escritos al lado.
 
 ## Criterios de diseño
 

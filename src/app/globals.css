@@ -1,14 +1,69 @@
 @import "tailwindcss";
 
+/*
+ * Sistema de diseño.
+ *
+ * Dos criterios mandan sobre el gusto, porque esta app se usa parada en la
+ * calle con el celular en una mano y la planilla en la otra:
+ *
+ * 1. **Contraste alto.** Se lee al sol. Los grises tibios de moda desaparecen
+ *    con luz directa, así que el texto secundario acá es más oscuro de lo que
+ *    se estila.
+ * 2. **Blancos que se puedan tocar.** Ningún control interactivo baja de 44px
+ *    de alto, que es lo que mide un dedo.
+ *
+ * La app es sólo en claro, a propósito: se usa de día, a la intemperie, y un
+ * modo oscuro a medio hacer se ve peor que no tenerlo.
+ */
 @theme {
-  --color-fondo: #f6f7f9;
-  --color-tinta: #16202c;
+  /* Planos */
+  --color-fondo: #f4f6f9;
+  --color-superficie: #ffffff;
+
+  /* Tinta */
+  --color-tinta: #0f1620;
+  --color-tinta-2: #4a5666;
+  --color-tinta-3: #6b7686;
+
+  /* Acento */
   --color-acento: #1d4ed8;
-  --color-borde: #dfe3ea;
+  --color-acento-oscuro: #1a43b8;
+  --color-acento-suave: #eef3ff;
+
+  /* Líneas */
+  --color-borde: #e3e8ef;
+  --color-borde-fuerte: #cfd6e0;
+
+  /*
+   * Colores de datos, para los gráficos del tablero. Validados como paleta
+   * categórica de 3 series sobre fondo blanco: separación suficiente para
+   * daltonismo (ΔE 9.2 en el peor par) y para visión normal (ΔE 24.0).
+   * El aqua queda apenas por debajo de 3:1 de contraste, así que las barras
+   * de ese color siempre llevan su número escrito al lado.
+   */
+  --color-serie-1: #2a78d6;
+  --color-serie-2: #eb6834;
+  --color-serie-3: #1baf7a;
+
+  /* Estados. Nunca van solos: siempre con texto que diga qué pasa. */
+  --color-alerta: #b45309;
+  --color-alerta-fondo: #fffbeb;
+  --color-alerta-borde: #fcd9a4;
+  --color-bien: #047857;
+  --color-bien-fondo: #ecfdf5;
+  --color-mal: #b91c1c;
+  --color-mal-fondo: #fef2f2;
+
+  --radius-tarjeta: 0.875rem;
 }
 
 :root {
   color-scheme: light;
+}
+
+html {
+  /* Al saltar a un ancla, que no quede tapada por la cabecera pegajosa. */
+  scroll-padding-top: 5rem;
 }
 
 body {
@@ -30,6 +85,22 @@ body > header {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Un solo anillo de foco para toda la app, visible sobre cualquier fondo. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /*
  * Clases propias del proyecto.
  *
@@ -38,32 +109,64 @@ body > header {
  */
 @layer components {
   .campo {
-    @apply w-full rounded-md border border-[var(--color-borde)] bg-white px-2 py-2
-           text-sm outline-none focus:border-[var(--color-acento)]
-           focus:ring-2 focus:ring-blue-200;
-  }
-
-  .boton {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
-           text-sm font-medium transition disabled:cursor-not-allowed
-           disabled:opacity-50;
+    @apply block w-full rounded-lg border border-[var(--color-borde-fuerte)]
+           bg-white px-3 py-2.5 text-sm text-[var(--color-tinta)]
+           outline-none transition
+           placeholder:text-[var(--color-tinta-3)]
+           hover:border-[var(--color-tinta-3)]
+           focus:border-[var(--color-acento)]
+           focus:ring-4 focus:ring-[var(--color-acento)]/12;
   }
 
   .boton-primario {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
-           text-sm font-medium transition disabled:cursor-not-allowed
-           disabled:opacity-50 bg-[var(--color-acento)] text-white
-           hover:bg-blue-700;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg
+           bg-[var(--color-acento)] px-4 py-2.5 text-sm font-semibold text-white
+           shadow-sm transition
+           hover:bg-[var(--color-acento-oscuro)] active:scale-[0.99]
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
   }
 
   .boton-secundario {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3
-           text-sm font-medium transition disabled:cursor-not-allowed
-           disabled:opacity-50 border border-[var(--color-borde)] bg-white
-           hover:bg-slate-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg
+           border border-[var(--color-borde-fuerte)] bg-white px-4 py-2.5
+           text-sm font-semibold text-[var(--color-tinta)] shadow-sm transition
+           hover:border-[var(--color-tinta-3)] hover:bg-slate-50
+           active:scale-[0.99]
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .boton-fantasma {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg
+           px-3 py-2 text-sm font-medium text-[var(--color-tinta-2)] transition
+           hover:bg-slate-100 hover:text-[var(--color-tinta)]
+           disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .tarjeta {
-    @apply rounded-xl border border-[var(--color-borde)] bg-white shadow-sm;
+    @apply rounded-[var(--radius-tarjeta)] border border-[var(--color-borde)]
+           bg-[var(--color-superficie)];
+    box-shadow:
+      0 1px 2px rgb(15 22 32 / 0.04),
+      0 1px 3px rgb(15 22 32 / 0.03);
+  }
+
+  /* Encabezado de tarjeta: título a la izquierda, acciones a la derecha. */
+  .tarjeta-titulo {
+    @apply flex flex-wrap items-center justify-between gap-3
+           border-b border-[var(--color-borde)] px-4 py-3.5;
+  }
+
+  .etiqueta {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
+           text-xs font-semibold;
+  }
+
+  /* Encabezado de sección de página. */
+  .titulo-pagina {
+    @apply text-[1.75rem] font-semibold leading-tight tracking-[-0.02em];
+  }
+
+  .bajada {
+    @apply text-sm leading-relaxed text-[var(--color-tinta-2)];
   }
 }

@@ -264,10 +264,10 @@ export function RevisarPlanilla({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="titulo-pagina">
             Revisar y corregir
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-[var(--color-tinta-2)]">
             {reclamos.length} reclamo{reclamos.length === 1 ? "" : "s"} leído
             {reclamos.length === 1 ? "" : "s"} de {planilla.archivoNombre}
             {dudosos > 0 && (
@@ -320,7 +320,7 @@ export function RevisarPlanilla({
       )}
 
       {reclamos.length === 0 && (
-        <p className="tarjeta px-4 py-6 text-center text-sm text-slate-600">
+        <p className="tarjeta px-4 py-6 text-center text-sm text-[var(--color-tinta-2)]">
           No se detectó ninguna fila con datos. Revisá la foto y volvé a
           cargarla.
         </p>
@@ -416,7 +416,7 @@ function FilaReclamo({
   return (
     <section className={`tarjeta p-4 ${borde}`}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto text-sm font-semibold text-slate-700">
+        <h2 className="mr-auto text-sm font-semibold text-[var(--color-tinta)]">
           Reclamo {indice + 1}
         </h2>
         {duplicado && (
@@ -476,7 +476,7 @@ function FilaReclamo({
           const valor = (reclamo[campo.clave] as string | null) ?? "";
           return (
             <label key={campo.clave} className="block">
-              <span className="mb-1 block text-xs font-medium text-slate-600">
+              <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
                 {campo.etiqueta}
               </span>
               {campo.opciones ? (
@@ -520,7 +520,7 @@ function FilaReclamo({
       </div>
 
       <label className="mt-3 block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">
+        <span className="mb-1 block text-xs font-medium text-[var(--color-tinta-2)]">
           Observaciones
         </span>
         <textarea
@@ -531,16 +531,16 @@ function FilaReclamo({
       </label>
 
       <div className="mt-4">
-        <p className="mb-2 text-xs font-medium text-slate-600">Materiales</p>
+        <p className="mb-2 text-xs font-medium text-[var(--color-tinta-2)]">Materiales</p>
         {materiales.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[var(--color-tinta-3)]">
             Todavía no hay columnas de materiales en el catálogo.
           </p>
         ) : (
           <div className="space-y-3">
             {agrupar(materiales).map(([grupo, delGrupo]) => (
               <fieldset key={grupo}>
-                <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-tinta-3)]">
                   {grupo}
                 </legend>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">

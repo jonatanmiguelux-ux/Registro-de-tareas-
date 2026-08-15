@@ -30,7 +30,7 @@ export default async function PaginaRevisar({
   if (planilla.estado === "ERROR") {
     return (
       <div className="mx-auto max-w-xl space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="titulo-pagina">
           No se pudo leer la planilla
         </h1>
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

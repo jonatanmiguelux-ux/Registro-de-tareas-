@@ -114,71 +114,185 @@ export function CargarPlanilla() {
         onChange={(e) => elegir(e.target.files)}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          className="boton-primario"
-          onClick={() => inputCamara.current?.click()}
-          disabled={analizando}
-        >
-          Tomar foto
-        </button>
-        <button
-          type="button"
-          className="boton-secundario"
-          onClick={() => inputArchivo.current?.click()}
-          disabled={analizando}
-        >
-          Elegir una imagen
-        </button>
-      </div>
+      {!vistaPrevia ? (
+        // Sin foto elegida: la zona de captura ocupa el centro de la pantalla.
+        // El botón de cámara es el grande porque es lo que se hace en la calle;
+        // elegir un archivo es el caso de escritorio.
+        <div className="tarjeta border-dashed border-[var(--color-borde-fuerte)] p-6 text-center sm:p-10">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--color-acento-suave)]">
+            <IconoCamara />
+          </span>
+          <p className="mt-4 text-base font-semibold">Sacale una foto</p>
+          <p className="bajada mx-auto mt-1 max-w-sm">
+            La planilla completa, con los cuatro bordes a la vista y sin sombras
+            encima de la tabla. No importa si sale de costado.
+          </p>
 
-      {vistaPrevia && (
+          <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              className="boton-primario"
+              onClick={() => inputCamara.current?.click()}
+              disabled={analizando}
+            >
+              <IconoCamaraChica />
+              Tomar foto
+            </button>
+            <button
+              type="button"
+              className="boton-secundario"
+              onClick={() => inputArchivo.current?.click()}
+              disabled={analizando}
+            >
+              Elegir una imagen
+            </button>
+          </div>
+        </div>
+      ) : (
         <div className="tarjeta overflow-hidden">
           {/* Imagen local del navegador: <img> evita el optimizador de Next. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={vistaPrevia}
             alt="Vista previa de la planilla"
-            className="max-h-[26rem] w-full object-contain bg-slate-100"
+            className="max-h-[26rem] w-full bg-slate-100 object-contain"
           />
-          <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-            <span className="truncate text-slate-600">{archivo?.name}</span>
-            <span className="shrink-0 text-slate-500">
-              {archivo ? `${(archivo.size / 1024 / 1024).toFixed(1)} MB` : ""}
+          <div className="flex items-center justify-between gap-3 border-t border-[var(--color-borde)] px-4 py-3 text-sm">
+            <span className="min-w-0 truncate font-medium">
+              {archivo?.name}
+              <span className="ml-2 font-normal text-[var(--color-tinta-3)]">
+                {archivo ? `${(archivo.size / 1024 / 1024).toFixed(1)} MB` : ""}
+              </span>
             </span>
+            <button
+              type="button"
+              className="boton-fantasma shrink-0 min-h-0 px-2 py-1 text-xs"
+              onClick={limpiar}
+              disabled={analizando}
+            >
+              Cambiar
+            </button>
           </div>
         </div>
       )}
 
       {guardada && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span className="font-medium">Foto guardada.</span> No hay señal
+        <Aviso tono="alerta">
+          <span className="font-semibold">Foto guardada.</span> No hay señal
           ahora, así que se va a subir sola en cuanto vuelva la conexión. Podés
           seguir con la próxima planilla.
-        </p>
+        </Aviso>
       )}
 
-      {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
-        </p>
-      )}
+      {error && <Aviso tono="mal">{error}</Aviso>}
 
-      <button
-        type="button"
-        className="boton-primario w-full"
-        onClick={analizar}
-        disabled={!archivo || analizando}
-      >
-        {analizando ? "Leyendo la planilla…" : "Analizar planilla"}
-      </button>
+      {archivo && (
+        <div>
+          <button
+            type="button"
+            className="boton-primario w-full"
+            onClick={analizar}
+            disabled={analizando}
+          >
+            {analizando ? (
+              <>
+                <Girador />
+                Leyendo la planilla…
+              </>
+            ) : (
+              "Analizar planilla"
+            )}
+          </button>
 
-      {analizando && (
-        <p className="text-center text-sm text-slate-600">
-          Puede tardar hasta un minuto. No cierres la pantalla.
-        </p>
+          {analizando && (
+            <p className="mt-2 text-center text-sm text-[var(--color-tinta-2)]">
+              Suele tardar entre 20 y 40 segundos. No cierres la pantalla.
+            </p>
+          )}
+        </div>
       )}
     </div>
+  );
+}
+
+function Aviso({
+  tono,
+  children,
+}: {
+  tono: "alerta" | "mal";
+  children: React.ReactNode;
+}) {
+  const estilo =
+    tono === "alerta"
+      ? "border-[var(--color-alerta-borde)] bg-[var(--color-alerta-fondo)] text-[var(--color-tinta)]"
+      : "border-red-200 bg-[var(--color-mal-fondo)] text-[var(--color-mal)]";
+  return (
+    <p className={`rounded-lg border px-4 py-3 text-sm ${estilo}`}>{children}</p>
+  );
+}
+
+function IconoCamara() {
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--color-acento)"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.25-.67l.6-.9A1.5 1.5 0 0 1 9.8 4.7h4.4a1.5 1.5 0 0 1 1.25.73l.6.9A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </svg>
+  );
+}
+
+function IconoCamaraChica() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.25-.67l.6-.9A1.5 1.5 0 0 1 9.8 4.7h4.4a1.5 1.5 0 0 1 1.25.73l.6.9A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </svg>
+  );
+}
+
+function Girador() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="animate-spin"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        opacity="0.25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

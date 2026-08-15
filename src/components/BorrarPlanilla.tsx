@@ -23,7 +23,7 @@ export function BorrarPlanilla({ id }: { id: string }) {
     return (
       <button
         type="button"
-        className="boton-secundario px-3 py-2 text-slate-600"
+        className="boton-secundario px-3 py-2 text-[var(--color-tinta-2)]"
         onClick={() => setConfirmando(true)}
       >
         Borrar
