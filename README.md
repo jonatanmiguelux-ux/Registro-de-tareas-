@@ -147,20 +147,19 @@ no deja rastro y puede perder datos.
 Un VPS chico alcanza sobrado. Todo va con Docker Compose: la app, Postgres,
 Caddy —que saca y renueva el certificado HTTPS solo— y las copias de la base.
 
+El dominio del proyecto es **registros-de-tareas.com.ar**.
+
 ```bash
 # En el servidor, con el repo clonado:
 cp .env.production.example .env.production
-#    completá dominio, claves y contraseñas
-
-# La contraseña de acceso se guarda hasheada:
-docker run --rm caddy:2-alpine caddy hash-password --plaintext 'la-clave'
+#    completá claves y contraseñas
 
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
-Antes de levantar, el dominio tiene que estar apuntando a la IP del servidor:
-Caddy pide el certificado la primera vez que alguien entra, y si el DNS todavía
-no propagó, falla.
+Antes de levantar, el dominio tiene que estar apuntando a la IP del servidor
+con un registro A: Caddy pide el certificado la primera vez que alguien entra,
+y si el DNS todavía no propagó, falla.
 
 **Cómo está armado.** Las migraciones corren en un contenedor aparte que se
 ejecuta una vez y termina; la app no arranca hasta que ese contenedor haya
@@ -178,15 +177,31 @@ tope de esos planes.
 **El acceso.** Cada persona entra con su cuenta de Google (ver "Quién entra y
 qué puede hacer"). Hace falta crear credenciales de OAuth en
 [console.cloud.google.com](https://console.cloud.google.com) → APIs y
-servicios → Credenciales → ID de cliente de OAuth → Aplicación web, con este
-URI de redireccionamiento **exacto**:
+servicios → Credenciales → ID de cliente de OAuth → Aplicación web.
+
+Orígenes autorizados de JavaScript:
 
 ```
-https://TU-DOMINIO/api/auth/callback/google
+https://registros-de-tareas.com.ar
+http://localhost:3000
 ```
 
-Si no coincide carácter por carácter, Google rechaza el login con
-`redirect_uri_mismatch`. Es el error más común al desplegar.
+URI de redireccionamiento autorizados, **exactos** y sin barra al final:
+
+```
+https://registros-de-tareas.com.ar/api/auth/callback/google
+http://localhost:3000/api/auth/callback/google
+```
+
+Si no coinciden carácter por carácter, Google rechaza el login con
+`redirect_uri_mismatch`. Es el error más común al desplegar, y el mensaje no
+aclara cuál es la diferencia.
+
+Y en la pantalla de consentimiento hay que **publicar la aplicación**: en modo
+"Prueba" sólo entran los correos cargados a mano en la lista de usuarios de
+prueba, y las sesiones se caen cada 7 días. Como no se piden permisos
+sensibles —sólo nombre, correo y foto—, publicarla es instantáneo y no pasa
+por ninguna revisión de Google.
 
 **Las copias.** El servidor guarda una por día en `./copias/`, pero eso no
 salva de que se rompa el servidor entero. Para bajarlas a tu PC:
