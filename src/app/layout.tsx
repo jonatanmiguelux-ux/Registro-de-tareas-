@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorker } from "@/components/ServiceWorker";
 import { ColaOffline } from "@/components/ColaOffline";
 import { NavegacionSuperior, NavegacionInferior } from "@/components/Navegacion";
+import { MenuUsuario } from "@/components/MenuUsuario";
 
 export const metadata: Metadata = {
   title: "Registro de tareas",
@@ -57,7 +58,10 @@ export default function RootLayout({
                 </span>
               </span>
             </Link>
-            <NavegacionSuperior />
+            <div className="flex items-center gap-2">
+              <NavegacionSuperior />
+              <MenuUsuario />
+            </div>
           </div>
         </header>
 

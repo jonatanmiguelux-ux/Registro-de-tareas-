@@ -30,6 +30,7 @@ export function ColaOffline() {
   const [rechazos, setRechazos] = useState<
     { nombre: string; motivo: string }[]
   >([]);
+  const [sinSesion, setSinSesion] = useState<string | null>(null);
 
   const procesar = useCallback(async () => {
     if (!hayCola()) return;
@@ -46,6 +47,10 @@ export function ColaOffline() {
 
       const nuevas = resultados.filter((r) => r.estado === "subida");
       const fallidas = resultados.filter((r) => r.estado === "rechazada");
+      const caducada = resultados.find((r) => r.estado === "sin-sesion");
+
+      // La foto sigue guardada; lo que falta es volver a entrar.
+      setSinSesion(caducada ? caducada.motivo : null);
 
       if (nuevas.length > 0) {
         setSubidas((previas) => [
@@ -90,18 +95,41 @@ export function ColaOffline() {
     };
   }, [procesar]);
 
-  if (pendientes === 0 && subidas.length === 0 && rechazos.length === 0) {
+  if (
+    pendientes === 0 &&
+    subidas.length === 0 &&
+    rechazos.length === 0 &&
+    !sinSesion
+  ) {
     return null;
   }
 
   return (
     <div className="mx-auto max-w-6xl space-y-2 px-4 pt-4">
+      {sinSesion && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-red-200 bg-[var(--color-mal-fondo)] px-4 py-3 text-sm text-[var(--color-mal)]">
+          <span>
+            <span className="font-semibold">
+              Las fotos no se pudieron subir:
+            </span>{" "}
+            {sinSesion} No se perdió ninguna: se suben en cuanto vuelvas a
+            entrar.
+          </span>
+          <Link
+            href="/acceso"
+            className="ml-auto font-semibold underline underline-offset-2"
+          >
+            Entrar
+          </Link>
+        </div>
+      )}
+
       {pendientes > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <span className="font-medium">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-[var(--color-alerta-borde)] bg-[var(--color-alerta-fondo)] px-4 py-3 text-sm">
+          <span className="font-semibold text-[var(--color-alerta)]">
             {pendientes} foto{pendientes === 1 ? "" : "s"} esperando señal
           </span>
-          <span className="text-amber-800">
+          <span className="text-[var(--color-tinta-2)]">
             {subiendo
               ? "Subiendo…"
               : "Se suben solas cuando vuelva la conexión. Podés cerrar y seguir después."}

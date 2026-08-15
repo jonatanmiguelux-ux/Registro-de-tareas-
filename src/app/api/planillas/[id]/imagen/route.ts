@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leerImagen } from "@/lib/almacenamiento";
+import { usuarioDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const { id } = await params;
   const planilla = await prisma.planilla.findUnique({
     where: { id },

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { listarMateriales } from "@/lib/materiales";
 import { detectarDuplicados } from "@/lib/duplicados";
 import { RevisarPlanilla } from "@/components/RevisarPlanilla";
+import { requerirUsuario } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function PaginaRevisar({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requerirUsuario();
   const { id } = await params;
 
   const [planilla, materiales, duplicados] = await Promise.all([

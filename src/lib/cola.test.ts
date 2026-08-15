@@ -91,6 +91,40 @@ test("NO reintenta cuando el servidor responde con error: ya guardó la planilla
   assert.equal(await contar(), 0, "no puede quedar para reintentar");
 });
 
+test("conserva la foto si venció la sesión: se rechazó antes de crear nada", async () => {
+  await vaciarCola();
+  await encolar(foto("sesion-vencida.jpg"));
+
+  // 401 y 403 son la excepción a la regla de "cualquier respuesta la saca de
+  // la cola": el servidor corta antes de crear la planilla, así que no hay
+  // nada a medio hacer y reintentar no duplica. Descartarla acá sería perder
+  // la foto por haber tardado en volver a tener señal.
+  fingirFetch(() => respuesta(401, { error: "Hay que iniciar sesión." }));
+  const resultados = await vaciar();
+
+  assert.deepEqual(resultados, [
+    { estado: "sin-sesion", motivo: "Hay que iniciar sesión." },
+  ]);
+  assert.equal(await contar(), 1, "la foto no se puede perder");
+});
+
+test("conserva la foto si la cuenta todavía no está habilitada", async () => {
+  await vaciarCola();
+  await encolar(foto("cuenta-pendiente.jpg"));
+
+  fingirFetch(() =>
+    respuesta(403, { error: "Tu cuenta todavía no está habilitada." }),
+  );
+  const resultados = await vaciar();
+
+  assert.equal(resultados[0].estado, "sin-sesion");
+  assert.equal(
+    await contar(),
+    1,
+    "se sube sola cuando un administrador la habilite",
+  );
+});
+
 test("descarta lo que el servidor rechaza por formato", async () => {
   await vaciarCola();
   await encolar(foto("captura.gif"));

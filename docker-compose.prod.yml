@@ -54,6 +54,14 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?falta GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
       UPLOAD_DIR: /datos/uploads
+      # Acceso con cuenta de Google.
+      AUTH_SECRET: ${AUTH_SECRET:?falta AUTH_SECRET}
+      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:?falta AUTH_GOOGLE_ID}
+      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:?falta AUTH_GOOGLE_SECRET}
+      # Detrás de Caddy, Auth.js tiene que confiar en el host que le llega
+      # para armar bien la URL de retorno de Google.
+      AUTH_URL: https://${DOMINIO}
+      AUTH_TRUST_HOST: "true"
     volumes:
       # Las fotos originales. Sobreviven a cada actualización de la app: son
       # la única forma de auditar un dato contra el papel.
@@ -69,8 +77,6 @@ services:
       - "443:443"
     environment:
       DOMINIO: ${DOMINIO:?falta DOMINIO}
-      USUARIO: ${USUARIO:-cuadrilla}
-      CLAVE_HASH: ${CLAVE_HASH:?falta CLAVE_HASH}
     volumes:
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
       # Los certificados: sin esto Let's Encrypt se pide de nuevo en cada

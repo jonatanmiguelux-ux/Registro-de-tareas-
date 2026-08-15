@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { detectarDuplicados } from "@/lib/duplicados";
+import { usuarioDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const { id } = await params;
   return NextResponse.json(await detectarDuplicados(id));
 }

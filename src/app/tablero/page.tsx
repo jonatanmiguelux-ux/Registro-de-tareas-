@@ -9,6 +9,7 @@ import {
 } from "@/lib/consultas";
 import { BarraFiltros } from "@/components/BarraFiltros";
 import { BotonExportar } from "@/components/BotonExportar";
+import { requerirUsuario } from "@/lib/sesion";
 import {
   GraficoBarras,
   GraficoColumnas,
@@ -26,6 +27,7 @@ export default async function PaginaTablero({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await requerirUsuario();
   const filtros = leerFiltros(await searchParams);
   const query = aQueryString(filtros);
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { borrarImagen } from "@/lib/almacenamiento";
 import { parsearFecha } from "@/lib/fechas";
 import { normalizarDiagnostico } from "@/lib/diagnosticos";
+import { usuarioDeApi, administradorDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,9 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const { id } = await params;
   const planilla = await prisma.planilla.findUnique({
     where: { id },
@@ -63,6 +67,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const { id } = await params;
   const cuerpo = CuerpoPatch.safeParse(await request.json());
 
@@ -146,6 +153,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const sesion = await administradorDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const { id } = await params;
   const planilla = await prisma.planilla.findUnique({
     where: { id },

@@ -6,6 +6,7 @@ import { cuadrillas } from "@/lib/consultas";
 import { BarraFiltros } from "@/components/BarraFiltros";
 import { BotonExportar } from "@/components/BotonExportar";
 import { BorrarPlanilla } from "@/components/BorrarPlanilla";
+import { requerirUsuario } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export default async function PaginaRegistros({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const usuario = await requerirUsuario();
+  const esAdmin = usuario.rol === "ADMINISTRADOR";
   const filtros = leerFiltros(await searchParams);
   const query = aQueryString(filtros);
 
@@ -204,7 +207,7 @@ export default async function PaginaRegistros({
                           >
                             {planilla.estado === "CONFIRMADA" ? "Ver" : "Revisar"}
                           </Link>
-                          <BorrarPlanilla id={planilla.id} />
+                          {esAdmin && <BorrarPlanilla id={planilla.id} />}
                         </div>
                       </div>
                     );

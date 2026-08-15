@@ -3,11 +3,15 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calcularStock } from "@/lib/stock";
 import { parsearFecha } from "@/lib/fechas";
+import { usuarioDeApi, administradorDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
 /** GET /api/stock — stock actual por material. */
 export async function GET() {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   return NextResponse.json(await calcularStock());
 }
 
@@ -21,6 +25,9 @@ const Movimiento = z.object({
 
 /** POST /api/stock — registra una entrada o una salida de depósito. */
 export async function POST(request: Request) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const cuerpo = Movimiento.safeParse(await request.json());
   if (!cuerpo.success) {
     return NextResponse.json(
@@ -62,6 +69,9 @@ const StockInicial = z.object({
  * partida del conteo, no un movimiento.
  */
 export async function PATCH(request: Request) {
+  const sesion = await administradorDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const cuerpo = StockInicial.safeParse(await request.json());
   if (!cuerpo.success) {
     return NextResponse.json(
@@ -85,6 +95,9 @@ const BorrarMovimiento = z.object({ id: z.string().min(1) });
 
 /** DELETE /api/stock — deshace un movimiento cargado por error. */
 export async function DELETE(request: Request) {
+  const sesion = await administradorDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const cuerpo = BorrarMovimiento.safeParse(await request.json());
   if (!cuerpo.success) {
     return NextResponse.json({ error: "Falta el id." }, { status: 400 });

@@ -22,6 +22,11 @@
  *
  * Sólo se conserva en la cola lo que nunca llegó al servidor: cuando `fetch`
  * falla de red, que es el caso que esta cola viene a resolver.
+ *
+ * Con una excepción: **401 y 403**. La sesión pudo vencerse mientras la foto
+ * esperaba señal, y esos dos se rechazan *antes* de crear nada, así que no
+ * hay planilla a medio hacer y reintentar no duplica. Descartarlas ahí sería
+ * perder la foto por haber tardado en volver a la señal.
  */
 
 const BASE = "registro-tareas";
@@ -39,7 +44,9 @@ export type Pendiente = {
 export type ResultadoSubida =
   | { estado: "subida"; planillaId: string; nombre: string }
   | { estado: "rechazada"; nombre: string; motivo: string }
-  | { estado: "sin-red" };
+  | { estado: "sin-red" }
+  /** La sesión venció o la cuenta no está habilitada. La foto se conserva. */
+  | { estado: "sin-sesion"; motivo: string };
 
 function abrir(): Promise<IDBDatabase> {
   return new Promise((resolver, rechazar) => {
@@ -133,6 +140,21 @@ async function subirUna(pendiente: Pendiente): Promise<ResultadoSubida> {
   }
 
   const datos = await respuesta.json().catch(() => ({}) as Record<string, unknown>);
+
+  // La sesión venció o la cuenta no está habilitada: el servidor rechazó la
+  // foto sin llegar a crear la planilla, así que se conserva para reintentar
+  // después de volver a entrar.
+  if (respuesta.status === 401 || respuesta.status === 403) {
+    await marcarIntento(pendiente);
+    return {
+      estado: "sin-sesion",
+      motivo:
+        typeof datos.error === "string"
+          ? datos.error
+          : "Hay que volver a iniciar sesión.",
+    };
+  }
+
   await quitar(pendiente.id);
 
   if (respuesta.ok && typeof datos.id === "string") {
@@ -152,8 +174,8 @@ async function subirUna(pendiente: Pendiente): Promise<ResultadoSubida> {
 /**
  * Sube todo lo que haya en la cola, de lo más viejo a lo más nuevo.
  *
- * Se corta al primer "sin-red": si no hay conexión para una, no la hay para
- * las que siguen, y seguir intentando sólo gasta batería.
+ * Se corta al primer "sin-red" o "sin-sesion": si falta la conexión o la
+ * sesión para una, falta para todas, y seguir intentando sólo gasta batería.
  */
 export async function vaciar(): Promise<ResultadoSubida[]> {
   if (!hayCola()) return [];
@@ -162,7 +184,9 @@ export async function vaciar(): Promise<ResultadoSubida[]> {
   for (const pendiente of await listar()) {
     const resultado = await subirUna(pendiente);
     resultados.push(resultado);
-    if (resultado.estado === "sin-red") break;
+    if (resultado.estado === "sin-red" || resultado.estado === "sin-sesion") {
+      break;
+    }
   }
   return resultados;
 }

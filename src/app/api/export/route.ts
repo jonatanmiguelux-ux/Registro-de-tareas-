@@ -3,6 +3,7 @@ import { construirLibro } from "@/lib/excel";
 import { listarMateriales } from "@/lib/materiales";
 import { consumoPorMaterial } from "@/lib/consultas";
 import { leerFiltros, whereReclamo } from "@/lib/filtros";
+import { usuarioDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,9 @@ export const runtime = "nodejs";
  * links de la versión anterior.
  */
 export async function GET(request: Request) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const url = new URL(request.url);
   const filtros = leerFiltros(url.searchParams);
   const where = whereReclamo(filtros);

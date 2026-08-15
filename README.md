@@ -175,11 +175,29 @@ apuntando a archivos que ya no existen, y se pierde poder auditar contra el
 papel—, y la lectura de una planilla tarda entre 20 y 40 segundos, arriba del
 tope de esos planes.
 
-**El acceso.** Una sola contraseña compartida a nivel del servidor web: nadie
-se registra ni tiene cuenta propia (ver "Sin login, a propósito"). El
-manifiesto, el ícono y el service worker quedan fuera de la contraseña a
-propósito: el navegador los pide sin credenciales, y si estuvieran protegidos
-la app no se podría instalar.
+**El acceso.** Cada persona entra con su cuenta de Google (ver "Quién entra y
+qué puede hacer"). Hace falta crear credenciales de OAuth en
+[console.cloud.google.com](https://console.cloud.google.com) → APIs y
+servicios → Credenciales → ID de cliente de OAuth → Aplicación web, con este
+URI de redireccionamiento **exacto**:
+
+```
+https://TU-DOMINIO/api/auth/callback/google
+```
+
+Si no coincide carácter por carácter, Google rechaza el login con
+`redirect_uri_mismatch`. Es el error más común al desplegar.
+
+**Las copias.** El servidor guarda una por día en `./copias/`, pero eso no
+salva de que se rompa el servidor entero. Para bajarlas a tu PC:
+
+```bash
+./docker/bajar-copias.sh root@la-ip-del-servidor "/ruta/donde/guardarlas"
+```
+
+Baja los volcados de la base y las fotos originales, saltea lo que ya tenés y
+te dice cómo restaurar. Necesita `rsync` y una clave SSH configurada. Conviene
+dejarlo en el programador de tareas de Windows una vez por semana.
 
 Para actualizar: `git pull` y repetir el `up -d --build`.
 
@@ -384,17 +402,50 @@ llevan su nombre y su número escritos al lado.
 - **Se guarda la respuesta cruda de la IA** (`respuestaCruda`) junto con la
   foto original, para poder auditar cualquier dato contra el papel.
 
-## Sin login, a propósito
+## Quién entra y qué puede hacer
 
-La app no tiene usuarios ni contraseñas, y no es algo pendiente: es una
-decisión. Quien está en la calle con el papel abre la app y saca la foto. Una
-pantalla de acceso entre el operario y la cámara agrega fricción justo en el
-único momento que importa, y no protege gran cosa: los datos son partes de
-trabajo de alumbrado público, no información sensible.
+Se entra con **cuenta de Google**. No hay contraseñas que recordar ni que
+repartir: la identidad la pone Google.
 
-La contracara es que **cualquiera con la URL puede cargar, editar y borrar**.
-Mientras la app viva en la red interna del municipio eso está bien. Si algún
-día se publica en internet, hay que resolverlo antes.
+Pero iniciar sesión con Google dice *quién sos*, no si tenés permiso —si no,
+cualquiera con un Gmail entraría a los partes del municipio—. Por eso la
+cuenta nace **en espera** y no ve nada hasta que un administrador la habilita
+desde la pantalla de Cuentas. **La primera cuenta que entra al sistema queda
+como administradora**, porque si no no habría nadie que pudiera aprobar a
+nadie y la app arrancaría trabada.
+
+| | Operario | Administrador |
+|---|---|---|
+| Cargar, revisar y confirmar planillas | Sí | Sí |
+| Ver historial, tablero, stock y exportar | Sí | Sí |
+| Cargar entradas y salidas de depósito | Sí | Sí |
+| Borrar planillas | — | Sí |
+| Corregir el stock inicial | — | Sí |
+| Habilitar cuentas y cambiar roles | — | Sí |
+
+Dar de baja una cuenta **no la borra**: se le retira el acceso y queda el
+registro de que existió, junto con quién la habilitó y cuándo.
+
+### Cómo está hecho
+
+El portón está en dos capas, y la separación importa:
+
+- **El middleware** sólo comprueba que *haya* sesión. Corre en el borde, donde
+  no se puede consultar la base, así que no puede saber más que eso.
+- **El permiso de verdad** —si la cuenta está habilitada y con qué rol— se
+  resuelve contra la base en cada pantalla y en cada endpoint
+  (`src/lib/sesion.ts`). Por eso dar de baja una cuenta tiene efecto en la
+  petición siguiente, y no cuando venza el token que esa persona tiene en el
+  celular.
+
+Nunca puede quedar el sistema sin administradores: el endpoint rechaza sacarle
+el rol o el acceso al último que quede activo, y nadie puede modificar su
+propia cuenta. Son resguardos del servidor, no de la interfaz, porque a esa
+dirección se puede llegar también escribiendo la petición a mano.
+
+El manifiesto, el service worker y los íconos quedan fuera del portón a
+propósito: el navegador los pide **sin credenciales**, y si respondieran con
+una redirección al login la app no se podría instalar en el celular.
 
 ## Para ampliar
 

@@ -7,6 +7,95 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Qué puede hacer una persona dentro de la app.
+enum RolUsuario {
+  /// Carga, revisa y confirma planillas. Ve todo.
+  OPERARIO
+  /// Además borra planillas, fija el stock inicial y habilita cuentas.
+  ADMINISTRADOR
+}
+
+/// Si la cuenta puede entrar.
+///
+/// Iniciar sesión con Google dice *quién sos*, no si tenés permiso: sin este
+/// estado, cualquiera con un Gmail entraría a los partes del municipio.
+enum EstadoUsuario {
+  /// Pidió acceso y espera que un administrador lo habilite.
+  PENDIENTE
+  ACTIVO
+  /// Se le retiró el acceso. No se borra, para no perder de vista quién fue.
+  BLOQUEADO
+}
+
+/// Una persona que usa la app.
+///
+/// La forma de los primeros campos y las tres tablas que siguen (Account,
+/// Session, VerificationToken) las impone el adaptador de Auth.js: no se
+/// pueden renombrar al castellano sin romperlo. Lo agregado por el proyecto
+/// —rol y estado— sí va en castellano, como el resto.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  rol    RolUsuario    @default(OPERARIO)
+  estado EstadoUsuario @default(PENDIENTE)
+
+  /// Quién lo habilitó y cuándo, para poder auditar los accesos.
+  habilitadoEn  DateTime?
+  habilitadoPor String?
+
+  accounts Account[]
+  sessions Session[]
+
+  creadoEn DateTime @default(now())
+
+  @@index([estado])
+  @@map("usuarios")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("cuentas_proveedor")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sesiones")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("tokens_verificacion")
+}
+
 /// Estado del procesamiento de una foto de planilla.
 enum EstadoPlanilla {
   PROCESANDO

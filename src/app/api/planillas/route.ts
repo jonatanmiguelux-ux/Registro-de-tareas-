@@ -6,6 +6,7 @@ import { asegurarMateriales, clave, listarMateriales } from "@/lib/materiales";
 import { parsearFecha } from "@/lib/fechas";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { normalizarDiagnostico } from "@/lib/diagnosticos";
+import { usuarioDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -14,6 +15,9 @@ const TAMANIO_MAXIMO = 20 * 1024 * 1024;
 
 /** GET /api/planillas — histórico, de la más reciente a la más vieja. */
 export async function GET() {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const planillas = await prisma.planilla.findMany({
     orderBy: { creadoEn: "desc" },
     include: { _count: { select: { reclamos: true } } },
@@ -23,6 +27,9 @@ export async function GET() {
 
 /** POST /api/planillas — recibe la foto, la analiza y guarda el borrador. */
 export async function POST(request: Request) {
+  const sesion = await usuarioDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const formulario = await request.formData();
   const archivo = formulario.get("imagen");
 

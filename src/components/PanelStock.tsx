@@ -18,9 +18,12 @@ type MovimientoVista = {
 export function PanelStock({
   stock,
   movimientos,
+  puedeFijarInicial = false,
 }: {
   stock: FilaStock[];
   movimientos: MovimientoVista[];
+  /** Sólo los administradores corrigen el punto de partida del stock. */
+  puedeFijarInicial?: boolean;
 }) {
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
@@ -225,7 +228,7 @@ export function PanelStock({
                           if (ok) setEditando(null);
                         }}
                       />
-                    ) : (
+                    ) : puedeFijarInicial ? (
                       <button
                         type="button"
                         className="tabular-nums underline decoration-dotted underline-offset-2 hover:text-[var(--color-acento)]"
@@ -234,6 +237,8 @@ export function PanelStock({
                       >
                         {s.stockInicial}
                       </button>
+                    ) : (
+                      <span className="tabular-nums">{s.stockInicial}</span>
                     )}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-green-700">
@@ -267,8 +272,10 @@ export function PanelStock({
           </table>
         </div>
         <p className="border-t border-[var(--color-borde)] px-4 py-2 text-xs text-[var(--color-tinta-3)]">
-          Actual = inicial + entradas − salidas − consumo. Tocá el número de
-          “Inicial” para corregirlo.
+          Actual = inicial + entradas − salidas − consumo.
+          {puedeFijarInicial
+            ? " Tocá el número de “Inicial” para corregirlo."
+            : " El stock inicial lo corrige un administrador."}
         </p>
       </section>
 
