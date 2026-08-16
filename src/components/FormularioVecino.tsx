@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LOCALIDADES } from "@/lib/localidades";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
 import { analizarNitidez, esDeNoche } from "@/lib/nitidez";
@@ -31,6 +32,7 @@ export function FormularioVecino() {
 
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicado, setDuplicado] = useState<string | null>(null);
   /** Se enciende al primer intento: hasta entonces no se marca nada en rojo. */
   const [intentado, setIntentado] = useState(false);
 
@@ -64,6 +66,8 @@ export function FormularioVecino() {
     e.preventDefault();
     setIntentado(true);
     setError(null);
+    // Si corrige la dirección después de ver el aviso, el aviso viejo estorba.
+    setDuplicado(null);
 
     if (!completo) {
       setError("Completá todos los campos para poder enviar el reclamo.");
@@ -85,6 +89,14 @@ export function FormularioVecino() {
         body: cuerpo,
       });
       const datos = await respuesta.json().catch(() => ({}));
+
+      // Alguien ya avisó por esta misma luminaria. No es un error de quien
+      // está cargando: hizo todo bien y llegó segundo. Se muestra aparte, en
+      // azul y no en rojo, porque la noticia es buena — ya está en camino.
+      if (datos.duplicado) {
+        setDuplicado(datos.mensaje);
+        return;
+      }
 
       if (!respuesta.ok) {
         setError(datos.error ?? "No se pudo enviar el reclamo.");
@@ -279,6 +291,26 @@ export function FormularioVecino() {
         <p className="rounded-lg border border-red-200 bg-[var(--color-mal-fondo)] px-4 py-3 text-sm text-[var(--color-mal)]">
           {error}
         </p>
+      )}
+
+      {duplicado && (
+        <div
+          role="status"
+          className="rounded-lg border border-[var(--color-acento)] bg-[var(--color-acento-suave)] px-4 py-4"
+        >
+          <p className="text-sm font-semibold text-[var(--color-acento)]">
+            Esa luminaria ya fue reportada
+          </p>
+          <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-tinta-2)]">
+            {duplicado}
+          </p>
+          <Link
+            href="/alumbrado"
+            className="mt-3 inline-block text-sm font-medium text-[var(--color-acento)] hover:underline"
+          >
+            Volver al inicio
+          </Link>
+        </div>
       )}
 
       <button type="submit" className="boton-primario w-full" disabled={enviando}>

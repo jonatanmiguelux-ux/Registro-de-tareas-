@@ -5,7 +5,11 @@ import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { cuadrillaDeLocalidad } from "@/lib/cuadrillas";
 import { vecinoDeApi } from "@/lib/sesion";
-import { permitir, LIMITES, mensajeDeEspera } from "@/lib/limite";
+import {
+  inicioDeVentana,
+  esMismoLugar,
+  avisoDeDuplicado,
+} from "@/lib/duplicados-vecinales";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import {
   correoValido,
@@ -46,20 +50,6 @@ export async function POST(request: Request) {
   // la sesión, que es un dato verificado por Google en vez de tipeado a mano.
   const sesion = await vecinoDeApi();
   if (!sesion.ok) return sesion.respuesta;
-
-  // Antes de leer el formulario: si la persona ya se pasó, no tiene sentido
-  // recibir una foto de 20 MB para después descartarla.
-  const cupo = permitir(
-    `reclamo:${sesion.usuario.id}`,
-    LIMITES.reclamoVecinal.maximo,
-    LIMITES.reclamoVecinal.ventanaMs,
-  );
-  if (!cupo.ok) {
-    return NextResponse.json(
-      { error: mensajeDeEspera(cupo.esperarSegundos) },
-      { status: 429, headers: { "Retry-After": String(cupo.esperarSegundos) } },
-    );
-  }
 
   const formulario = await request.formData().catch(() => null);
   if (!formulario) {
@@ -125,6 +115,49 @@ export async function POST(request: Request) {
     );
   }
 
+  // Se guarda con el nombre completo, igual que en las planillas, para que un
+  // día se puedan cruzar los dos lados por localidad.
+  const localidadNormalizada = normalizarLocalidad(localidad) ?? localidad;
+
+  // ¿Ya avisó otro vecino por esta misma luminaria?
+  //
+  // Va **antes** de guardar la foto: si el reclamo no se va a crear, no tiene
+  // sentido dejar 20 MB tirados en el disco.
+  //
+  // Se comparan sólo los de los últimos 3 días hábiles y se ignoran los
+  // descartados. Si pasada esa semana laboral corta la luz sigue apagada, el
+  // vecino puede volver a reportarla y esta vez el aviso significa otra cosa:
+  // que no la arreglaron.
+  const desde = inicioDeVentana(new Date());
+  const enLaZona = await prisma.reclamoVecinal.findMany({
+    where: {
+      localidad: localidadNormalizada,
+      creadoEn: { gte: desde },
+      estado: { in: ["RECIBIDO", "DERIVADO"] },
+    },
+    select: { localidad: true, calle: true, numero: true, cuadrilla: true },
+  });
+
+  const yaReportado = enLaZona.find((r) =>
+    esMismoLugar(r, { localidad: localidadNormalizada, calle, numero }),
+  );
+
+  if (yaReportado) {
+    // 409 y no 400: no está mal lo que mandó, ya está hecho. El aviso va en
+    // `duplicado` y no en `error` para que la pantalla lo muestre como una
+    // buena noticia y no como una falla suya.
+    //
+    // No se devuelve el código de seguimiento del otro reclamo: es de otra
+    // persona, y con él se podría abrir su reclamo y ver su dirección.
+    return NextResponse.json(
+      {
+        duplicado: true,
+        mensaje: avisoDeDuplicado(yaReportado.cuadrilla),
+      },
+      { status: 409 },
+    );
+  }
+
   const bytes = Buffer.from(await archivo.arrayBuffer());
   const verificacion = verificarImagen(bytes, archivo.type);
   if (!verificacion.ok) {
@@ -134,10 +167,6 @@ export async function POST(request: Request) {
   const fotoRuta = await guardarImagen(bytes, verificacion.tipo);
 
   const codigo = generarCodigoSeguimiento();
-
-  // Se guarda con el nombre completo, igual que en las planillas, para que un
-  // día se puedan cruzar los dos lados por localidad.
-  const localidadNormalizada = normalizarLocalidad(localidad) ?? localidad;
 
   const reclamo = await prisma.reclamoVecinal.create({
     data: {
