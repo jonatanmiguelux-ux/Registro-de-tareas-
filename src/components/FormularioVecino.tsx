@@ -61,9 +61,14 @@ export function FormularioVecino() {
       return URL.createObjectURL(elegida);
     });
 
-    // La borrosidad se mide sobre la **original**. Achicar una foto movida la
-    // hace parecer más nítida —al juntar píxeles se disimula el arrastre—, y
-    // entonces dejaríamos pasar fotos que no se entienden.
+    // La borrosidad se mide sobre la **original**, antes de achicar.
+    //
+    // Medido en Chrome: hoy da lo mismo, porque `analizarNitidez` ya reduce a
+    // 256 px por su cuenta y a esa escala achicar a 1600 no cambia nada —una
+    // foto movida da 3 de las dos formas—. Se deja igual en este orden porque
+    // es el que no depende de esa coincidencia: si mañana se bajan las
+    // medidas de compresión, medir lo que la persona sacó de verdad sigue
+    // siendo lo correcto.
     const nitidez = await analizarNitidez(elegida);
     if (nitidez?.borrosa) setMovida(true);
 
