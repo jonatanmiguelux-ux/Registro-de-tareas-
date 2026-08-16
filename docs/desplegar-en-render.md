@@ -147,11 +147,17 @@ Con los dominios andando, dos cambios:
 | `AUTH_URL` | `https://registros-de-tareas.com.ar` |
 | `DOMINIO_VECINOS` | `vecinos-lacosta.com.ar` |
 
-**En Google**, agregá el URI de redireccionamiento del dominio real:
+**En Google**, agregá los URI de redireccionamiento de **los dos dominios**:
 
 ```
 https://registros-de-tareas.com.ar/api/auth/callback/google
+https://vecinos-lacosta.com.ar/api/auth/callback/google
 ```
+
+El segundo es el que más se olvida, y sin él el vecino no puede entrar a
+reportar: también inicia sesión con Google, desde su propio dominio. Las
+credenciales son las mismas para las dos apps — lo único que se agrega es la
+dirección de vuelta.
 
 Dejá también el de `onrender.com`: no molesta, y te sirve si algún día hay un
 problema con el dominio.
@@ -161,7 +167,9 @@ Guardá en Render y esperá a que se reinicie.
 ## 8. Comprobar que quedó todo
 
 - [ ] `vecinos-lacosta.com.ar` abre la página que explica el servicio
-- [ ] Desde ahí, cargar un reclamo de prueba funciona de punta a punta
+- [ ] Desde ahí, entrar con Google como vecino funciona
+- [ ] Cargar un reclamo de prueba funciona de punta a punta
+- [ ] En "Mis reclamos" aparece el que acabás de cargar
 - [ ] `vecinos-lacosta.com.ar/tablero` **no** entra: devuelve al inicio
 - [ ] `registros-de-tareas.com.ar` pide entrar con Google
 - [ ] Entrás y quedás como administrador
