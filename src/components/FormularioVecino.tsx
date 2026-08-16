@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LOCALIDADES } from "@/lib/localidades";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
+import { analizarNitidez, esDeNoche } from "@/lib/nitidez";
 
 /**
  * Formulario del vecino.
@@ -23,6 +24,10 @@ export function FormularioVecino() {
   const [observacion, setObservacion] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
+  /** Aviso de foto movida. Nunca impide enviar: sólo sugiere sacar otra. */
+  const [movida, setMovida] = useState(false);
+  /** La hora se lee en el navegador para no desajustar el HTML del servidor. */
+  const [deNoche, setDeNoche] = useState(false);
 
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +44,20 @@ export function FormularioVecino() {
   };
   const completo = !Object.values(faltantes).some(Boolean);
 
-  function elegirFoto(lista: FileList | null) {
+  useEffect(() => setDeNoche(esDeNoche()), []);
+
+  async function elegirFoto(lista: FileList | null) {
     const elegida = lista?.[0];
     if (!elegida) return;
     setFoto(elegida);
+    setMovida(false);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
       return URL.createObjectURL(elegida);
     });
+
+    const nitidez = await analizarNitidez(elegida);
+    if (nitidez?.borrosa) setMovida(true);
   }
 
   async function enviar(e: React.FormEvent) {
@@ -191,6 +202,19 @@ export function FormularioVecino() {
           className="hidden"
           onChange={(e) => elegirFoto(e.target.files)}
         />
+        {/* De noche, el recordatorio del flash. La web no puede prenderlo —lo
+            decide la cámara del celular, que es otra app— pero sí puede
+            avisarle a la persona antes de que la abra. */}
+        {deNoche && !vistaPrevia && (
+          <p className="mb-2 flex items-start gap-2 rounded-lg border border-[var(--color-alerta-borde)] bg-[var(--color-alerta-fondo)] px-3 py-2 text-xs">
+            <IconoFoco />
+            <span>
+              Está oscuro. <span className="font-semibold">Prendé el flash</span>{" "}
+              cuando se abra la cámara: sin luz, el poste no se distingue.
+            </span>
+          </p>
+        )}
+
         {vistaPrevia ? (
           <div className="tarjeta overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -199,12 +223,27 @@ export function FormularioVecino() {
               alt="Foto de la luminaria"
               className="max-h-72 w-full bg-slate-100 object-contain"
             />
+
+            {/* Se avisa, no se bloquea. Rechazar una foto deja a alguien sin
+                poder reportar, y eso es peor que una foto movida: la movida al
+                menos se ve, y quien la revisa puede pedir otra. */}
+            {movida && (
+              <p className="flex items-start gap-2 border-t border-[var(--color-alerta-borde)] bg-[var(--color-alerta-fondo)] px-4 py-2.5 text-xs">
+                <IconoAviso />
+                <span>
+                  La foto parece movida.{" "}
+                  <span className="font-semibold">Si podés, sacá otra</span>{" "}
+                  apoyando el codo o el celular en algo firme.
+                </span>
+              </p>
+            )}
+
             <button
               type="button"
               className="w-full border-t border-[var(--color-borde)] px-4 py-2.5 text-sm font-medium transition hover:bg-slate-50"
               onClick={() => inputFoto.current?.click()}
             >
-              Cambiar la foto
+              Sacar otra
             </button>
           </div>
         ) : (
@@ -276,6 +315,34 @@ function Campo({
       <span className="mt-1.5 block">{children}</span>
       <Falta visible={Boolean(falta)}>Este dato es obligatorio.</Falta>
     </label>
+  );
+}
+
+function IconoFoco() {
+  return (
+    <svg
+      width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="var(--color-alerta)" strokeWidth="1.9"
+      strokeLinecap="round" strokeLinejoin="round"
+      className="mt-0.5 shrink-0" aria-hidden="true"
+    >
+      <path d="M9 18h6M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8 1 .9 1.6h5.4c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z" />
+    </svg>
+  );
+}
+
+function IconoAviso() {
+  return (
+    <svg
+      width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="var(--color-alerta)" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round"
+      className="mt-0.5 shrink-0" aria-hidden="true"
+    >
+      <path d="M12 3.6 21.2 19.4H2.8z" />
+      <path d="M12 10v4M12 17h.01" />
+    </svg>
   );
 }
 
