@@ -101,8 +101,16 @@ acá y guardá (la app se reinicia sola).
 
 Después, en [console.cloud.google.com](https://console.cloud.google.com):
 
-**APIs y servicios** → **Credenciales** → tu ID de cliente → en **URI de
-redireccionamiento autorizados**, agregá:
+**APIs y servicios** → **Credenciales** → tu ID de cliente. Ahí hay dos campos
+que se confunden fácil, y hay que completar los dos.
+
+En **Orígenes autorizados de JavaScript**, sólo el dominio:
+
+```
+https://registro-de-tareas.onrender.com
+```
+
+En **URI de redireccionamiento autorizados**, el mismo con la ruta:
 
 ```
 https://registro-de-tareas.onrender.com/api/auth/callback/google
@@ -147,20 +155,31 @@ Con los dominios andando, dos cambios:
 | `AUTH_URL` | `https://registros-de-tareas.com.ar` |
 | `DOMINIO_VECINOS` | `vecinos-lacosta.com.ar` |
 
-**En Google**, agregá los URI de redireccionamiento de **los dos dominios**:
+**En Google** hay que completar **dos campos distintos**, y se confunden fácil:
+
+**Orígenes autorizados de JavaScript** — de dónde sale el pedido. Sólo el
+dominio, sin barra ni nada después:
+
+```
+https://registros-de-tareas.com.ar
+https://vecinos-lacosta.com.ar
+```
+
+**URI de redireccionamiento autorizados** — adónde vuelve Google cuando la
+persona ya eligió su cuenta. Los mismos dominios, con la ruta completa:
 
 ```
 https://registros-de-tareas.com.ar/api/auth/callback/google
 https://vecinos-lacosta.com.ar/api/auth/callback/google
 ```
 
-El segundo es el que más se olvida, y sin él el vecino no puede entrar a
-reportar: también inicia sesión con Google, desde su propio dominio. Las
-credenciales son las mismas para las dos apps — lo único que se agrega es la
-dirección de vuelta.
+El del vecino es el que más se olvida, y sin él entra a la página, aprieta
+reportar y no puede pasar de ahí: desde que reportar exige cuenta, también
+inicia sesión con Google, y lo hace desde su propio dominio. Las credenciales
+son las mismas para las dos apps — lo único que se agrega es la dirección.
 
-Dejá también el de `onrender.com`: no molesta, y te sirve si algún día hay un
-problema con el dominio.
+Dejá también las de `onrender.com` y las de `localhost:3000`: no molestan, y
+te sirven para probar o si algún día hay un problema con el dominio.
 
 Guardá en Render y esperá a que se reinicie.
 
