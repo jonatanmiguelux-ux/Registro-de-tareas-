@@ -47,14 +47,14 @@ export default function PaginaAlumbrado() {
         <ol className="mt-3 space-y-3">
           {[
             {
+              titulo: "Entrás con tu cuenta de Google",
+              texto:
+                "La que ya tenés. No hay que crear ninguna contraseña ni completar un registro.",
+            },
+            {
               titulo: "Cargás el reclamo",
               texto:
                 "Elegís qué le pasa a la luminaria, decís dónde está y sacás una foto. La foto es lo que le permite a la cuadrilla encontrar el poste exacto.",
-            },
-            {
-              titulo: "Te damos un número de seguimiento",
-              texto:
-                "Guardalo. Con ese número podés volver cuando quieras y ver en qué estado quedó, sin cuenta ni contraseña.",
             },
             {
               titulo: "El municipio lo carga en el sistema",
@@ -94,8 +94,8 @@ export default function PaginaAlumbrado() {
               r: "No podemos prometerte una fecha. Tu reclamo entra en la cola de la cuadrilla de tu zona junto con los demás, y se atiende según la carga de trabajo. Lo que sí podés hacer es ver en qué estado está, con tu número de seguimiento.",
             },
             {
-              p: "¿Tengo que dejar mis datos?",
-              r: "No. El correo es opcional, y sirve sólo para que podamos avisarte cómo sigue. Sin correo el reclamo entra igual.",
+              p: "¿Por qué tengo que entrar con Google?",
+              r: "Para que puedas seguir tus reclamos sin anotar ningún número, y para que sepamos con quién hablar si hace falta un dato más. No pedimos ninguna contraseña nueva: usás la cuenta que ya tenés, y de ahí sólo tomamos tu nombre y tu correo.",
             },
             {
               p: "¿Y si ya lo reportó un vecino?",
