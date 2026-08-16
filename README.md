@@ -29,11 +29,39 @@ Funciona igual en celular y en PC.
 8. **Exportar** — `.xlsx` de un día o de un período, con los mismos filtros
    que la pantalla.
 
+## Dos apps, un servidor
+
+El proyecto sirve a dos públicos que no se cruzan, y por eso son dos apps con
+cara propia:
+
+| | Para quién | Dónde |
+|---|---|---|
+| **La del municipio** | Cuadrillas y oficina, con cuenta | `/`, `/registros`, `/tablero`, `/stock`, `/vecinos` |
+| **La del vecino** | Cualquiera, sin cuenta | `/alumbrado`, `/reclamar`, `/reclamo/…` |
+
+No comparten **nada visible**: ni nombre, ni encabezado, ni navegación. Quien
+entra a reportar una luz quemada no tiene por qué enterarse de que del otro
+lado hay un sistema de planillas, stock y cuadrillas. En el código son dos
+grupos de rutas con su propio layout —`src/app/(municipio)` y
+`src/app/(vecino)`—; los paréntesis agrupan sin aparecer en la dirección.
+
+Por dentro son **un solo despliegue y una sola base**, y eso no es una
+concesión: los reclamos de los vecinos tienen que aparecer en la bandeja del
+municipio. Con bases separadas habría que construir y mantener una conexión
+entre las dos apps para pasarlos.
+
+**Con un dominio propio para el vecino** (`DOMINIO_VECINOS`), la separación se
+vuelve completa: desde ese dominio la app del municipio no existe. La raíz
+muestra la página que explica el servicio, y cualquier otra dirección —incluso
+escrita a mano— devuelve ahí. Sin configurarlo, todo convive en un dominio y
+la parte del vecino queda en `/alumbrado`.
+
 ## Los reclamos de los vecinos
 
 Hoy, para reportar una luz quemada, un vecino tiene que ir hasta la
 delegación. La app suma una pantalla pública —**`/reclamar`**— donde lo carga
-desde el celular en un minuto.
+desde el celular en un minuto, precedida de **`/alumbrado`**, que explica el
+servicio a quien llega desde un folleto o un mensaje reenviado.
 
 **No genera números de incidente propios**, a propósito. El municipio ya tiene
 un sistema que los emite, y dos numeraciones conviviendo terminarían en que la
@@ -106,6 +134,7 @@ de verificación se puede reponer.
 | **Tablero** | Totales, pendientes, resumen diario y consumo por material |
 | **Stock** | Stock inicial, entradas, salidas y stock actual |
 | **Vecinos** | Los reclamos que cargó la gente, para pasarlos al sistema oficial |
+| **Alumbrado** | Pública: explica el servicio al vecino |
 | **Reclamar** | Pública, sin cuenta: donde el vecino carga su reclamo |
 
 Los filtros (fecha, cuadrilla, estado, incidente) viven en la query string: se
@@ -366,7 +395,8 @@ public/sw.js                Service worker: sólo cachea estáticos, nunca datos
 Dockerfile                  Imagen de producción
 docker-compose.prod.yml     Despliegue: app, base, Caddy y copias
 docker/Caddyfile            HTTPS automático y contraseña de acceso
-src/app/page.tsx            Cargar
+src/app/(municipio)/          La app del municipio, con su encabezado
+src/app/(vecino)/             La app del vecino, sin nada del municipio
 src/app/revisar/[id]/       Revisar y corregir
 src/app/registros/          Histórico y exportación
 src/app/api/                Endpoints

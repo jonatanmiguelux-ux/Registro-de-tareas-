@@ -1,10 +1,18 @@
 # Servidor web de producción.
 #
 # Caddy saca y renueva el certificado HTTPS solo con Let's Encrypt, con sólo
-# apuntar el dominio a la IP del servidor. No hay que tocar nada más: sin
+# apuntar cada dominio a la IP del servidor. No hay que tocar nada más: sin
 # HTTPS los celulares no habilitan la cámara ni instalan la app.
-
-{$DOMINIO} {
+#
+# **Los dos dominios se atienden en el mismo bloque.** Quién ve qué lo decide
+# la app según el dominio por el que entró la petición (ver DOMINIO_VECINOS en
+# .env.production): desde el del vecino, la app del municipio no existe.
+#
+# Se hace así y no con dos bloques porque DOMINIO_VECINOS es opcional: si
+# estuviera en un bloque propio y quedara vacío, Caddy no arrancaría. Acá,
+# vacío simplemente no agrega un segundo dominio y todo sigue funcionando en
+# uno solo, con la parte del vecino en /alumbrado.
+{$DOMINIO} {$DOMINIO_VECINOS} {
 	encode zstd gzip
 
 	# Tope de cuerpo, un poco arriba del límite de 20 MB que valida la app:
@@ -14,10 +22,7 @@
 	}
 
 	# El control de acceso lo hace la app, no este servidor: cada persona
-	# entra con su cuenta de Google y un administrador la habilita. Antes acá
-	# había una contraseña compartida; se quitó al haber cuentas de verdad,
-	# porque sumada al login sólo agregaba una pantalla más sin proteger nada
-	# que la app no proteja ya.
+	# entra con su cuenta de Google y un administrador la habilita.
 
 	# La lectura de una planilla tarda entre 20 y 40 segundos.
 	reverse_proxy app:3000 {

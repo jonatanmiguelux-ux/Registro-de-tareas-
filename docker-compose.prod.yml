@@ -54,6 +54,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?falta GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
       UPLOAD_DIR: /datos/uploads
+      # Dominio propio de la app del vecino. Si está vacío, todo convive en
+      # un solo dominio y la parte del vecino queda en /alumbrado.
+      DOMINIO_VECINOS: ${DOMINIO_VECINOS:-}
       # Acceso con cuenta de Google.
       AUTH_SECRET: ${AUTH_SECRET:?falta AUTH_SECRET}
       AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:?falta AUTH_GOOGLE_ID}
@@ -77,6 +80,7 @@ services:
       - "443:443"
     environment:
       DOMINIO: ${DOMINIO:?falta DOMINIO}
+      DOMINIO_VECINOS: ${DOMINIO_VECINOS:-}
     volumes:
       - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
       # Los certificados: sin esto Let's Encrypt se pide de nuevo en cada

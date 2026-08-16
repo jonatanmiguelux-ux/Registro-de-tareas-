@@ -28,13 +28,45 @@ const PUBLICAS = [
   "/sw.js",
   "/sin-conexion.html",
   "/icono",
-  // Lo del vecino: carga un reclamo y sigue su estado, sin cuenta. Es lo
-  // único de la app abierto a internet, y por eso sus endpoints validan todo
-  // en el servidor y tienen tope por hora.
+  // Lo del vecino: la página que explica el servicio, la carga del reclamo y
+  // su seguimiento. Sin cuenta. Es lo único de la app abierto a internet, y
+  // por eso sus endpoints validan todo en el servidor y tienen tope por hora.
+  "/alumbrado",
   "/reclamar",
   "/reclamo",
   "/api/reclamos-vecinales",
 ];
+
+/**
+ * Lo que se puede ver desde el dominio del vecino.
+ *
+ * Es una lista corta y cerrada: desde ese dominio la app del municipio no
+ * existe. Aunque alguien escriba /tablero a mano, no llega — se lo devuelve
+ * al inicio. Así las dos apps comparten servidor sin compartir superficie.
+ *
+ * `/api/reclamos-vecinales` entra sólo exacto: sus subrutas —la foto, la
+ * edición— son del municipio y exigen sesión.
+ */
+function permitidaParaVecinos(ruta: string): boolean {
+  return (
+    ruta === "/" ||
+    ruta === "/alumbrado" ||
+    ruta === "/reclamar" ||
+    ruta.startsWith("/reclamo/") ||
+    ruta === "/api/reclamos-vecinales" ||
+    ruta.startsWith("/icono/") ||
+    ruta === "/favicon.ico"
+  );
+}
+
+/** ¿La petición entró por el dominio que se le da a los vecinos? */
+function esDominioDeVecinos(host: string | null): boolean {
+  const configurado = process.env.DOMINIO_VECINOS?.trim().toLowerCase();
+  if (!configurado || !host) return false;
+  // Sin el puerto: en el servidor llega con el dominio pelado, pero al probar
+  // en una PC puede venir como "localhost:3000".
+  return host.toLowerCase().split(":")[0] === configurado;
+}
 
 function esPublica(ruta: string): boolean {
   return PUBLICAS.some((p) => ruta === p || ruta.startsWith(`${p}/`));
@@ -102,7 +134,7 @@ function conCabeceras(respuesta: NextResponse, csp: string): NextResponse {
   return respuesta;
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const nonce = crypto.randomUUID().replace(/-/g, "");
@@ -114,6 +146,28 @@ export async function middleware(request: NextRequest) {
   cabecerasEntrantes.set("Content-Security-Policy", csp);
   const seguir = () =>
     NextResponse.next({ request: { headers: cabecerasEntrantes } });
+
+  // Desde el dominio del vecino, la app del municipio no existe.
+  if (esDominioDeVecinos(request.headers.get("host"))) {
+    if (!permitidaParaVecinos(pathname)) {
+      return conCabeceras(
+        NextResponse.redirect(new URL("/alumbrado", request.url)),
+        csp,
+      );
+    }
+    // La raíz de ese dominio muestra la página que explica el servicio, no la
+    // pantalla de cargar planillas. Es una reescritura y no una redirección:
+    // la dirección que ve el vecino sigue siendo la del dominio pelado.
+    if (pathname === "/") {
+      return conCabeceras(
+        NextResponse.rewrite(new URL("/alumbrado", request.url), {
+          request: { headers: cabecerasEntrantes },
+        }),
+        csp,
+      );
+    }
+    return conCabeceras(seguir(), csp);
+  }
 
   if (esPublica(pathname)) return conCabeceras(seguir(), csp);
 
