@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requerirAdministrador } from "@/lib/sesion";
+import { requerirRol } from "@/lib/sesion";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import { describirZona, localidadesSinAsignar } from "@/lib/cuadrillas";
 import { LOCALIDADES } from "@/lib/localidades";
@@ -8,13 +8,13 @@ import { RepartoCuadrillas } from "@/components/RepartoCuadrillas";
 export const dynamic = "force-dynamic";
 
 /**
- * El reparto de zonas. Sólo para administradores.
+ * El reparto de zonas. Del encargado para arriba.
  *
  * Cambiar quién cubre qué es una decisión de gestión, no técnica: tiene que
  * poder hacerse desde acá y no editando el código.
  */
 export default async function PaginaCuadrillas() {
-  await requerirAdministrador();
+  await requerirRol("ENCARGADO");
 
   const cuadrillas = await listarCuadrillas();
   const sinAsignar = localidadesSinAsignar(cuadrillas);

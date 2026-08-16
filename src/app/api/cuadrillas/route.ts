@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { administradorDeApi } from "@/lib/sesion";
+import { rolDeApi } from "@/lib/sesion";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 /** GET /api/cuadrillas — el reparto actual. */
 export async function GET() {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
   return NextResponse.json(await listarCuadrillas());
 }
@@ -32,7 +32,7 @@ const Asignacion = z.object({
  * poste.
  */
 export async function PATCH(request: Request) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = Asignacion.safeParse(await request.json().catch(() => null));
@@ -76,7 +76,7 @@ const NuevaCuadrilla = z.object({ numero: z.number().int().positive().max(99) })
 
 /** POST /api/cuadrillas — da de alta una cuadrilla vacía. */
 export async function POST(request: Request) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = NuevaCuadrilla.safeParse(await request.json().catch(() => null));
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
 /** DELETE /api/cuadrillas?numero=N — da de baja una cuadrilla sin localidades. */
 export async function DELETE(request: Request) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const numero = Number(new URL(request.url).searchParams.get("numero"));

@@ -2,12 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { RolUsuario, EstadoUsuario } from "@prisma/client";
+import { ESCALERA, NOMBRE_ROL } from "@/lib/roles";
 
-type Estado = "PENDIENTE" | "ACTIVO" | "BLOQUEADO";
-type Rol = "OPERARIO" | "ADMINISTRADOR";
+type Estado = EstadoUsuario;
+type Rol = RolUsuario;
 
 /**
  * Botones para habilitar, dar de baja y cambiar el rol de una cuenta.
+ *
+ * El desplegable de rol **sólo aparece para el administrador**. El jefe puede
+ * habilitar y dar de baja gente —la gestión de todos los días— pero no cambiar
+ * roles: si pudiera, podría ascenderse a sí mismo o nombrar a otro por
+ * encima, y la jerarquía se reescribiría desde adentro.
  *
  * La propia cuenta no se puede tocar a sí misma: quitarse el acceso o bajarse
  * el rol por accidente dejaría el sistema sin administrador y sin forma de
@@ -18,11 +25,13 @@ export function AccionesCuenta({
   estado,
   rol,
   esYo,
+  puedeCambiarRol,
 }: {
   id: string;
   estado: Estado;
   rol: Rol;
   esYo: boolean;
+  puedeCambiarRol: boolean;
 }) {
   const router = useRouter();
   const [enviando, iniciar] = useTransition();
@@ -59,9 +68,7 @@ export function AccionesCuenta({
 
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {error && (
-        <span className="text-xs text-[var(--color-mal)]">{error}</span>
-      )}
+      {error && <span className="text-xs text-[var(--color-mal)]">{error}</span>}
 
       {estado !== "ACTIVO" ? (
         <button
@@ -74,16 +81,26 @@ export function AccionesCuenta({
         </button>
       ) : (
         <>
-          <select
-            className="campo min-h-0 w-auto py-1.5 text-xs"
-            value={rol}
-            disabled={enviando}
-            onChange={(e) => cambiar({ rol: e.target.value as Rol })}
-            aria-label="Rol"
-          >
-            <option value="OPERARIO">Operario</option>
-            <option value="ADMINISTRADOR">Administrador</option>
-          </select>
+          {puedeCambiarRol ? (
+            <select
+              className="campo min-h-0 w-auto py-1.5 text-xs"
+              value={rol}
+              disabled={enviando}
+              onChange={(e) => cambiar({ rol: e.target.value as Rol })}
+              aria-label="Rol"
+            >
+              {ESCALERA.map((r) => (
+                <option key={r} value={r}>
+                  {NOMBRE_ROL[r]}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs text-[var(--color-tinta-3)]">
+              {NOMBRE_ROL[rol]}
+            </span>
+          )}
+
           <button
             type="button"
             className="boton-secundario min-h-0 px-3 py-2 text-xs"

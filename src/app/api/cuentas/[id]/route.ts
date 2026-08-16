@@ -1,31 +1,39 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { administradorDeApi } from "@/lib/sesion";
+import { rolDeApi, alcanza } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
 const Cambios = z.object({
   estado: z.enum(["PENDIENTE", "ACTIVO", "BLOQUEADO"]).optional(),
-  rol: z.enum(["OPERARIO", "ADMINISTRADOR"]).optional(),
+  rol: z.enum(["OPERARIO", "ENCARGADO", "JEFE", "ADMINISTRADOR"]).optional(),
 });
 
 /**
  * PATCH /api/cuentas/:id — habilita, da de baja o cambia el rol de una cuenta.
  *
- * Dos resguardos que no dependen de la interfaz, porque acá se puede llegar
- * también escribiendo la petición a mano:
+ * Dos permisos distintos conviven en esta ruta:
  *
- * 1. Nadie se modifica a sí mismo. Quitarse el acceso o bajarse el rol
- *    dejaría a esa persona afuera sin forma de volver.
- * 2. Nunca puede quedar el sistema sin ningún administrador activo. Si se
- *    permitiera, la única salida sería entrar a la base a mano.
+ * - **Habilitar y dar de baja** lo puede el jefe. Es la gestión de todos los
+ *   días: entra alguien nuevo, se va otro.
+ * - **Cambiar el rol** es sólo del administrador. Quién es qué define la
+ *   jerarquía, y si el jefe pudiera tocarlo podría ascenderse a sí mismo o
+ *   nombrar a otro por encima: la jerarquía se reescribiría desde adentro.
+ *
+ * Tres resguardos más, que viven acá y no en la interfaz porque a esta
+ * dirección se puede llegar escribiendo la petición a mano:
+ *
+ * 1. Nadie se modifica a sí mismo.
+ * 2. Nunca puede quedar el sistema sin administradores activos.
+ * 3. Nadie puede tocar una cuenta de rol mayor o igual al propio. Sin esto,
+ *    un jefe podría dar de baja al administrador.
  */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("JEFE");
   if (!sesion.ok) return sesion.respuesta;
 
   const { id } = await params;
@@ -44,14 +52,32 @@ export async function PATCH(
 
   const objetivo = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, rol: true, estado: true },
+    select: { id: true, rol: true, estado: true, tipo: true },
   });
 
-  if (!objetivo) {
+  if (!objetivo || objetivo.tipo !== "PERSONAL") {
     return NextResponse.json({ error: "No existe la cuenta." }, { status: 404 });
   }
 
+  // Nadie manda sobre un igual o un superior.
+  if (
+    alcanza(objetivo.rol, sesion.usuario.rol) &&
+    sesion.usuario.rol !== "ADMINISTRADOR"
+  ) {
+    return NextResponse.json(
+      { error: "No podés modificar una cuenta del mismo rango o mayor." },
+      { status: 403 },
+    );
+  }
+
   const { estado, rol } = cuerpo.data;
+
+  if (rol && sesion.usuario.rol !== "ADMINISTRADOR") {
+    return NextResponse.json(
+      { error: "Cambiar el rol de una cuenta es sólo del administrador." },
+      { status: 403 },
+    );
+  }
 
   // ¿Este cambio deja al sistema sin administradores?
   const dejaDeSerAdmin =

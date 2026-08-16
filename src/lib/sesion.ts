@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { RolUsuario, EstadoUsuario, TipoUsuario } from "@prisma/client";
+import { alcanza, NOMBRE_ROL } from "@/lib/roles";
+
+// Se reexportan para que quien ya pide permisos desde acá no tenga que
+// importar de dos lados.
+export { alcanza, NOMBRE_ROL };
 
 /**
  * Quién está usando la app, resuelto **contra la base**.
@@ -86,11 +91,21 @@ export async function requerirVecino(): Promise<Usuario> {
   return usuario;
 }
 
-/** Igual que la anterior, pero además exige rol de administrador. */
-export async function requerirAdministrador(): Promise<Usuario> {
+/**
+ * Exige una sesión habilitada con al menos cierto rol.
+ *
+ * Quien no llega vuelve al inicio en vez de ver un error: no le sirve saber
+ * que existe una pantalla a la que no puede entrar.
+ */
+export async function requerirRol(minimo: RolUsuario): Promise<Usuario> {
   const usuario = await requerirUsuario();
-  if (usuario.rol !== "ADMINISTRADOR") redirect("/");
+  if (!alcanza(usuario.rol, minimo)) redirect("/");
   return usuario;
+}
+
+/** Atajo para lo que sólo puede el administrador: asignar roles. */
+export async function requerirAdministrador(): Promise<Usuario> {
+  return requerirRol("ADMINISTRADOR");
 }
 
 /**
@@ -165,22 +180,31 @@ export async function vecinoDeApi(): Promise<
   return { ok: true, usuario };
 }
 
-/** Igual, pero sólo para administradores. */
-export async function administradorDeApi(): Promise<
+/** Igual, pero exigiendo al menos cierto rol. */
+export async function rolDeApi(
+  minimo: RolUsuario,
+): Promise<
   { ok: true; usuario: Usuario } | { ok: false; respuesta: Response }
 > {
   const resultado = await usuarioDeApi();
   if (!resultado.ok) return resultado;
 
-  if (resultado.usuario.rol !== "ADMINISTRADOR") {
+  if (!alcanza(resultado.usuario.rol, minimo)) {
     return {
       ok: false,
       respuesta: Response.json(
-        { error: "Esta acción es sólo para administradores." },
+        {
+          error: `Esta acción es para ${NOMBRE_ROL[minimo].toLowerCase()} en adelante.`,
+        },
         { status: 403 },
       ),
     };
   }
 
   return resultado;
+}
+
+/** Sólo administradores. Lo que define quién es quién. */
+export async function administradorDeApi() {
+  return rolDeApi("ADMINISTRADOR");
 }

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calcularStock } from "@/lib/stock";
 import { parsearFecha } from "@/lib/fechas";
-import { usuarioDeApi, administradorDeApi } from "@/lib/sesion";
+import { usuarioDeApi, rolDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -69,7 +69,7 @@ const StockInicial = z.object({
  * partida del conteo, no un movimiento.
  */
 export async function PATCH(request: Request) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = StockInicial.safeParse(await request.json());
@@ -95,7 +95,7 @@ const BorrarMovimiento = z.object({ id: z.string().min(1) });
 
 /** DELETE /api/stock — deshace un movimiento cargado por error. */
 export async function DELETE(request: Request) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = BorrarMovimiento.safeParse(await request.json());

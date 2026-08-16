@@ -1,18 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { requerirAdministrador } from "@/lib/sesion";
+import { requerirRol, NOMBRE_ROL } from "@/lib/sesion";
+import type { RolUsuario, EstadoUsuario } from "@prisma/client";
 import { formatearMomento } from "@/lib/fechas";
 import { AccionesCuenta } from "@/components/AccionesCuenta";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Administración de cuentas. Sólo para administradores.
+ * Administración de cuentas. Del jefe para arriba.
+ *
+ * El jefe habilita y da de baja gente —la gestión de todos los días—, pero el
+ * rol de cada uno lo asigna sólo el administrador.
  *
  * Las pendientes van arriba de todo: son las que están esperando que alguien
  * haga algo, y es lo único de esta pantalla que tiene urgencia.
  */
 export default async function PaginaCuentas() {
-  const yo = await requerirAdministrador();
+  // El jefe entra a gestionar altas y bajas; cambiar roles queda para el
+  // administrador, y eso se resuelve fila por fila más abajo.
+  const yo = await requerirRol("JEFE");
+  const puedeCambiarRol = yo.rol === "ADMINISTRADOR";
 
   const usuarios = await prisma.user.findMany({
     // Sólo el personal. Las cuentas de vecino no piden aprobación ni ven nada
@@ -58,7 +65,11 @@ export default async function PaginaCuentas() {
           <ul className="divide-y divide-[var(--color-borde)]">
             {pendientes.map((u) => (
               <li key={u.id} className="p-4">
-                <Fila usuario={u} esYo={u.id === yo.id} />
+                <Fila
+                  usuario={u}
+                  esYo={u.id === yo.id}
+                  puedeCambiarRol={puedeCambiarRol}
+                />
               </li>
             ))}
           </ul>
@@ -81,7 +92,11 @@ export default async function PaginaCuentas() {
           <ul className="divide-y divide-[var(--color-borde)]">
             {resto.map((u) => (
               <li key={u.id} className="p-4">
-                <Fila usuario={u} esYo={u.id === yo.id} />
+                <Fila
+                  usuario={u}
+                  esYo={u.id === yo.id}
+                  puedeCambiarRol={puedeCambiarRol}
+                />
               </li>
             ))}
           </ul>
@@ -100,19 +115,21 @@ export default async function PaginaCuentas() {
 function Fila({
   usuario,
   esYo,
+  puedeCambiarRol,
 }: {
   usuario: {
     id: string;
     name: string | null;
     email: string | null;
     image: string | null;
-    rol: "OPERARIO" | "ADMINISTRADOR";
-    estado: "PENDIENTE" | "ACTIVO" | "BLOQUEADO";
+    rol: RolUsuario;
+    estado: EstadoUsuario;
     creadoEn: Date;
     habilitadoEn: Date | null;
     habilitadoPor: string | null;
   };
   esYo: boolean;
+  puedeCambiarRol: boolean;
 }) {
   const etiquetaEstado = {
     PENDIENTE: {
@@ -141,9 +158,11 @@ function Fila({
           <span className={`etiqueta ${etiquetaEstado.clase}`}>
             {etiquetaEstado.texto}
           </span>
-          {usuario.rol === "ADMINISTRADOR" && (
+          {/* El operario es el caso normal y no se etiqueta: marcar a todo el
+              mundo haría que la etiqueta no distinga nada. */}
+          {usuario.rol !== "OPERARIO" && (
             <span className="etiqueta bg-[var(--color-acento-suave)] text-[var(--color-acento)]">
-              Administrador
+              {NOMBRE_ROL[usuario.rol]}
             </span>
           )}
           {esYo && (
@@ -164,6 +183,7 @@ function Fila({
         estado={usuario.estado}
         rol={usuario.rol}
         esYo={esYo}
+        puedeCambiarRol={puedeCambiarRol}
       />
     </div>
   );

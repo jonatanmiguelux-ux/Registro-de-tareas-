@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { RolUsuario, EstadoUsuario } from "@prisma/client";
+import { alcanza, NOMBRE_ROL } from "@/lib/roles";
 
 type Usuario = {
   nombre: string | null;
   email: string | null;
   imagen: string | null;
-  rol: "OPERARIO" | "ADMINISTRADOR";
-  estado: "PENDIENTE" | "ACTIVO" | "BLOQUEADO";
+  rol: RolUsuario;
+  estado: EstadoUsuario;
 };
 
 /**
@@ -85,27 +87,30 @@ export function MenuUsuario() {
               {usuario.email}
             </p>
             <p className="mt-1.5 text-xs font-medium text-[var(--color-tinta-2)]">
-              {usuario.rol === "ADMINISTRADOR" ? "Administrador" : "Operario"}
+              {NOMBRE_ROL[usuario.rol]}
             </p>
           </div>
 
-          {usuario.rol === "ADMINISTRADOR" && (
-            <>
-              <Link
-                href="/cuadrillas"
-                className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
-                onClick={() => setAbierto(false)}
-              >
-                Cuadrillas y zonas
-              </Link>
-              <Link
-                href="/cuentas"
-                className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
-                onClick={() => setAbierto(false)}
-              >
-                Cuentas
-              </Link>
-            </>
+          {/* Cada quien ve sólo las puertas que puede abrir. Mostrar un enlace
+              que después rebota sería peor que no mostrarlo. */}
+          {alcanza(usuario.rol, "ENCARGADO") && (
+            <Link
+              href="/cuadrillas"
+              className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
+              onClick={() => setAbierto(false)}
+            >
+              Cuadrillas y zonas
+            </Link>
+          )}
+
+          {alcanza(usuario.rol, "JEFE") && (
+            <Link
+              href="/cuentas"
+              className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
+              onClick={() => setAbierto(false)}
+            >
+              Cuentas
+            </Link>
           )}
 
           {/* Formulario y no fetch: cerrar sesión tiene que limpiar la cookie

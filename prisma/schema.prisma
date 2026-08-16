@@ -8,10 +8,25 @@ datasource db {
 }
 
 /// Qué puede hacer una persona dentro de la app.
+///
+/// Es una escalera: cada rol puede todo lo del anterior y algo más. El orden
+/// está en `src/lib/sesion.ts`, que es donde se compara — acá el orden de los
+/// valores es sólo el que se escribió.
 enum RolUsuario {
-  /// Carga, revisa y confirma planillas. Ve todo.
+  /// Carga, revisa y confirma planillas, y mueve stock de depósito. Ve todo.
   OPERARIO
-  /// Además borra planillas, fija el stock inicial y habilita cuentas.
+
+  /// El día a día que rompe cosas: borrar planillas, corregir el stock
+  /// inicial y repartir las cuadrillas por zona.
+  ENCARGADO
+
+  /// Además decide quién entra: habilita cuentas nuevas y da de baja las que
+  /// dejan de trabajar. **No cambia roles**: quién es qué lo decide el
+  /// administrador, para que la jerarquía no se pueda reescribir desde
+  /// adentro.
+  JEFE
+
+  /// Todo, incluido asignar roles y nombrar a otro administrador.
   ADMINISTRADOR
 }
 

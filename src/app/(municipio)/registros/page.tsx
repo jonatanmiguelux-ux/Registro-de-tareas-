@@ -6,7 +6,7 @@ import { cuadrillas } from "@/lib/consultas";
 import { BarraFiltros } from "@/components/BarraFiltros";
 import { BotonExportar } from "@/components/BotonExportar";
 import { BorrarPlanilla } from "@/components/BorrarPlanilla";
-import { requerirUsuario } from "@/lib/sesion";
+import { requerirUsuario, alcanza } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +47,9 @@ export default async function PaginaRegistros({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const usuario = await requerirUsuario();
-  const esAdmin = usuario.rol === "ADMINISTRADOR";
+  // Borrar una planilla es lo mismo que puede hacer la API: del encargado
+  // para arriba.
+  const puedeBorrar = alcanza(usuario.rol, "ENCARGADO");
   const filtros = leerFiltros(await searchParams);
   const query = aQueryString(filtros);
 
@@ -223,7 +225,7 @@ export default async function PaginaRegistros({
                           >
                             {planilla.estado === "CONFIRMADA" ? "Ver" : "Revisar"}
                           </Link>
-                          {esAdmin && <BorrarPlanilla id={planilla.id} />}
+                          {puedeBorrar && <BorrarPlanilla id={planilla.id} />}
                         </div>
                       </div>
                     );

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { borrarImagen } from "@/lib/almacenamiento";
 import { parsearFecha } from "@/lib/fechas";
 import { normalizarDiagnostico } from "@/lib/diagnosticos";
-import { usuarioDeApi, administradorDeApi } from "@/lib/sesion";
+import { usuarioDeApi, rolDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
@@ -160,7 +160,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const sesion = await administradorDeApi();
+  const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
   const { id } = await params;
