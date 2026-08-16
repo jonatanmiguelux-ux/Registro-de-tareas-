@@ -31,4 +31,6 @@ tsconfig.tsbuildinfo
 # usa sólo cuando la nube no está disponible. Son de esta máquina, no del
 # proyecto.
 respaldo.log
-respaldos/
+# Con la barra al principio: sólo la carpeta de espera de la raíz. Sin ella
+# también se ignoraría src/app/(municipio)/respaldos/, que es código.
+/respaldos/

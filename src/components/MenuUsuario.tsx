@@ -113,6 +113,16 @@ export function MenuUsuario() {
             </Link>
           )}
 
+          {usuario.rol === "ADMINISTRADOR" && (
+            <Link
+              href="/respaldos"
+              className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
+              onClick={() => setAbierto(false)}
+            >
+              Respaldos
+            </Link>
+          )}
+
           {/* Formulario y no fetch: cerrar sesión tiene que limpiar la cookie
               del servidor, y el endpoint de Auth.js espera un POST. */}
           <form action="/api/auth/signout" method="post">

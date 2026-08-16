@@ -86,22 +86,57 @@ try {
   }
 
   $enLaNube = $true
+  $Espera = Join-Path $Proyecto "respaldos"
 
   if (-not $Destino) {
     $nube = Buscar-CarpetaNube
     if ($nube) {
       $Destino = Join-Path $nube "Registro de tareas - Excel"
     } else {
-      # Sin nube disponible NO se aborta: se guarda igual en el disco. Perder
-      # el archivo del dia seria peor que guardarlo en un lugar imperfecto.
-      $Destino = Join-Path $Proyecto "respaldos"
+      # Sin nube disponible NO se aborta: se guarda en la carpeta de espera.
+      # Perder el archivo del dia seria peor que guardarlo en un lugar
+      # imperfecto, y ahi queda hasta que alguien configure una nube.
+      $Destino = $Espera
       $enLaNube = $false
-      Anotar "No encontre carpeta de Google Drive ni de OneDrive. Guardo local en $Destino" "AVISO"
+      Anotar "Sin nube configurada. El Excel queda esperando en $Espera" "AVISO"
     }
   }
 
   if (-not (Test-Path $Destino)) {
     New-Item -ItemType Directory -Path $Destino -Force | Out-Null
+  }
+
+  # -------------------------------------------------------------------------
+  # 2b. Poner al dia lo que quedo esperando
+  # -------------------------------------------------------------------------
+
+  # Si hubo dias sin nube, esos Excel estan en la carpeta de espera. Ahora que
+  # hay donde subirlos, van todos. Esto corre ANTES de generar el de hoy: si
+  # algo falla mas adelante, al menos lo viejo ya quedo a salvo.
+  if ($enLaNube -and (Test-Path $Espera)) {
+    $pendientes = @(Get-ChildItem $Espera -Filter "*.xlsx" -ErrorAction SilentlyContinue)
+    $subidos = 0
+    foreach ($p in $pendientes) {
+      $final = Join-Path $Destino $p.Name
+      try {
+        if (Test-Path $final) {
+          # Ya esta en la nube el de ese dia: manda el de la nube.
+          Remove-Item $p.FullName -Force
+        } else {
+          # Copiar y despues borrar, nunca mover: entre discos distintos mover
+          # puede fallar a mitad de camino y ese seria el unico archivo que
+          # habia de ese dia.
+          Copy-Item $p.FullName $final -Force
+          Remove-Item $p.FullName -Force
+          $subidos++
+        }
+      } catch {
+        Anotar "No pude subir el pendiente $($p.Name): $($_.Exception.Message)" "AVISO"
+      }
+    }
+    if ($subidos -gt 0) {
+      Anotar "Subidos $subidos archivos que estaban esperando una nube."
+    }
   }
 
   # -------------------------------------------------------------------------
