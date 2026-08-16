@@ -170,9 +170,19 @@ export function FormularioVecino() {
 
       <Campo
         etiqueta="Foto de la luminaria"
-        ayuda="Ayuda a encontrar el poste exacto"
+        ayuda="Sacala desde el celular, parado frente al poste"
         falta={intentado && faltantes.foto}
       >
+        {/*
+          `capture` le pide al celular que abra la cámara de atrás en vez de la
+          galería: la foto tiene que ser de la luminaria que se está
+          reportando, no una vieja ni una bajada de internet.
+
+          En una computadora esto no hace nada —no hay cámara que abrir— y el
+          navegador ofrece elegir un archivo. Es la única salida posible ahí, y
+          no vale la pena bloquearla: quien reporta desde una PC igual necesita
+          poder adjuntar la foto que sacó con el celular.
+        */}
         <input
           ref={inputFoto}
           type="file"
@@ -203,7 +213,8 @@ export function FormularioVecino() {
             className="boton-secundario w-full"
             onClick={() => inputFoto.current?.click()}
           >
-            Sacar o elegir una foto
+            <IconoCamara />
+            Sacar una foto
           </button>
         )}
       </Campo>
@@ -265,6 +276,25 @@ function Campo({
       <span className="mt-1.5 block">{children}</span>
       <Falta visible={Boolean(falta)}>Este dato es obligatorio.</Falta>
     </label>
+  );
+}
+
+function IconoCamara() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.25-.67l.6-.9A1.5 1.5 0 0 1 9.8 4.7h4.4a1.5 1.5 0 0 1 1.25.73l.6.9A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </svg>
   );
 }
 
