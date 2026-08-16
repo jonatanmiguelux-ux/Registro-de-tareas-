@@ -28,8 +28,13 @@ self.addEventListener("install", (evento) => {
       .open(CASCARA)
       // La pantalla de cargar se guarda a propósito: es la única que tiene
       // que abrir sin señal, porque es donde se saca la foto que queda en
-      // cola esperando la conexión. Es una página estática, sin datos que
-      // puedan quedar viejos.
+      // cola esperando la conexión. No trae datos del servidor, así que la
+      // copia guardada nunca queda vieja.
+      //
+      // Desde que pide sesión, lo que se guarda acá es lo que el servidor le
+      // contestó a **esta** persona. Si es del municipio, guarda la pantalla
+      // de cargar; si es un vecino, guarda la redirección a su lado. En los
+      // dos casos, lo que corresponde.
       .then((cache) => cache.addAll([SIN_RED, CARGAR, "/icono/icono-192.png"]))
       .then(() => self.skipWaiting()),
   );
