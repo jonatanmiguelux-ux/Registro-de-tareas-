@@ -5,6 +5,7 @@ import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { cuadrillaDeLocalidad } from "@/lib/cuadrillas";
 import { vecinoDeApi } from "@/lib/sesion";
+import { permitir, LIMITES, mensajeDeEspera } from "@/lib/limite";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import {
   correoValido,
@@ -45,6 +46,20 @@ export async function POST(request: Request) {
   // la sesión, que es un dato verificado por Google en vez de tipeado a mano.
   const sesion = await vecinoDeApi();
   if (!sesion.ok) return sesion.respuesta;
+
+  // Antes de leer el formulario: si la persona ya se pasó, no tiene sentido
+  // recibir una foto de 20 MB para después descartarla.
+  const cupo = permitir(
+    `reclamo:${sesion.usuario.id}`,
+    LIMITES.reclamoVecinal.maximo,
+    LIMITES.reclamoVecinal.ventanaMs,
+  );
+  if (!cupo.ok) {
+    return NextResponse.json(
+      { error: mensajeDeEspera(cupo.esperarSegundos) },
+      { status: 429, headers: { "Retry-After": String(cupo.esperarSegundos) } },
+    );
+  }
 
   const formulario = await request.formData().catch(() => null);
   if (!formulario) {

@@ -8,19 +8,27 @@ import { requerirVecino } from "@/lib/sesion";
 export const dynamic = "force-dynamic";
 
 /**
- * Seguimiento del reclamo, para el vecino.
+ * Seguimiento del reclamo, para el vecino que lo cargó.
  *
- * Pública y sin sesión: la llave es el código, que sólo tiene quien cargó el
- * reclamo. Por eso acá no se muestra el correo ni ningún otro dato personal
- * —quien tenga el código no necesariamente es la misma persona— y tampoco la
- * nota interna del municipio.
+ * Nació como página pública, con el código de seguimiento como única llave.
+ * Desde que reportar exige cuenta, eso ya no alcanza: el código viaja en la
+ * barra del navegador, queda en el historial y se comparte en una captura, y
+ * con él a la vista **cualquiera con una cuenta podía leer el reclamo de otro**
+ * —con la dirección de su casa adentro—. Ahora se comprueba de quién es.
+ *
+ * Pasan dos: el dueño, y el personal del municipio, que necesita poder abrir
+ * cualquiera para atenderlo. Los reclamos viejos, cargados antes de que la
+ * cuenta fuera obligatoria, no tienen dueño: esos los ve sólo el municipio.
+ *
+ * Cuando no corresponde se responde "no existe" y no "no podés": decir cuál de
+ * las dos cosas es confirmaría que ese código es de alguien.
  */
 export default async function PaginaSeguimiento({
   params,
 }: {
   params: Promise<{ codigo: string }>;
 }) {
-  await requerirVecino();
+  const usuario = await requerirVecino();
   const { codigo } = await params;
 
   const reclamo = await prisma.reclamoVecinal.findUnique({
@@ -36,10 +44,15 @@ export default async function PaginaSeguimiento({
       nroIncidente: true,
       creadoEn: true,
       derivadoEn: true,
+      vecinoId: true,
     },
   });
 
   if (!reclamo) notFound();
+
+  const esDelMunicipio = usuario.tipo === "PERSONAL";
+  const esMio = reclamo.vecinoId !== null && reclamo.vecinoId === usuario.id;
+  if (!esMio && !esDelMunicipio) notFound();
 
   const pasos = [
     {

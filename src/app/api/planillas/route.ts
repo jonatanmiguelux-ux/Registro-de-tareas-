@@ -8,6 +8,7 @@ import { parsearFecha } from "@/lib/fechas";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { normalizarDiagnostico } from "@/lib/diagnosticos";
 import { usuarioDeApi } from "@/lib/sesion";
+import { permitir, LIMITES, mensajeDeEspera } from "@/lib/limite";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -33,6 +34,21 @@ export async function GET() {
 export async function POST(request: Request) {
   const sesion = await usuarioDeApi();
   if (!sesion.ok) return sesion.respuesta;
+
+  // Cada planilla es una llamada paga a la IA. Un botón que se queda apretado
+  // o un celular que reintenta solo pueden gastar mucho sin que nadie lo
+  // quiera. El tope está muy por encima de un día de trabajo real.
+  const cupo = permitir(
+    `planilla:${sesion.usuario.id}`,
+    LIMITES.planilla.maximo,
+    LIMITES.planilla.ventanaMs,
+  );
+  if (!cupo.ok) {
+    return NextResponse.json(
+      { error: mensajeDeEspera(cupo.esperarSegundos) },
+      { status: 429, headers: { "Retry-After": String(cupo.esperarSegundos) } },
+    );
+  }
 
   const formulario = await request.formData();
   const archivo = formulario.get("imagen");
