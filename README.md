@@ -34,10 +34,21 @@ Funciona igual en celular y en PC.
 El proyecto sirve a dos públicos que no se cruzan, y por eso son dos apps con
 cara propia:
 
-| | Para quién | Dónde |
+| | Para quién | Dominio |
 |---|---|---|
-| **La del municipio** | Cuadrillas y oficina, con cuenta | `/`, `/registros`, `/tablero`, `/stock`, `/vecinos` |
-| **La del vecino** | Cualquiera, sin cuenta | `/alumbrado`, `/reclamar`, `/reclamo/…` |
+| **La del municipio** | Cuadrillas y oficina, con cuenta | `registros-de-tareas.com.ar` |
+| **La del vecino** | Cualquiera, sin cuenta | `vecinos-lacosta.com.ar` |
+
+Los dos apuntan al mismo servidor. Adentro:
+
+```
+registros-de-tareas.com.ar          Cargar planillas (requiere sesión)
+registros-de-tareas.com.ar/tablero  Tablero, stock, registros, vecinos…
+
+vecinos-lacosta.com.ar              La página que explica el servicio
+vecinos-lacosta.com.ar/reclamar     El formulario
+vecinos-lacosta.com.ar/reclamo/XXX  El seguimiento, con el número de guía
+```
 
 No comparten **nada visible**: ni nombre, ni encabezado, ni navegación. Quien
 entra a reportar una luz quemada no tiene por qué enterarse de que del otro
@@ -50,11 +61,13 @@ concesión: los reclamos de los vecinos tienen que aparecer en la bandeja del
 municipio. Con bases separadas habría que construir y mantener una conexión
 entre las dos apps para pasarlos.
 
-**Con un dominio propio para el vecino** (`DOMINIO_VECINOS`), la separación se
-vuelve completa: desde ese dominio la app del municipio no existe. La raíz
-muestra la página que explica el servicio, y cualquier otra dirección —incluso
-escrita a mano— devuelve ahí. Sin configurarlo, todo convive en un dominio y
-la parte del vecino queda en `/alumbrado`.
+La separación por dominio es lo que las vuelve dos apps de verdad: desde
+`vecinos-lacosta.com.ar` la del municipio **no existe**. Cualquier dirección
+que no sea del vecino —incluso escrita a mano, incluso las rutas internas de
+la API— devuelve a la página de inicio.
+
+Si `DOMINIO_VECINOS` se deja vacío, todo convive en un solo dominio y la parte
+del vecino queda en `/alumbrado`. Sirve para probar sin comprar nada.
 
 ## Los reclamos de los vecinos
 
