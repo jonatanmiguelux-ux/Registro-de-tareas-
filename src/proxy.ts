@@ -176,10 +176,23 @@ export default async function proxy(request: NextRequest) {
 
   if (esPublica(pathname)) return conCabeceras(seguir(), csp);
 
+  // El nombre de la galleta de sesión depende del **protocolo real**, no del
+  // modo en que corre la app: sobre HTTPS Auth.js la guarda con prefijo
+  // `__Secure-` y sobre HTTP sin él. Mirar NODE_ENV en vez del protocolo hacía
+  // que acá se buscara un nombre y la página encontrara el otro: el proxy
+  // mandaba al login, el login veía la sesión y devolvía al inicio, y el
+  // navegador terminaba con "demasiadas redirecciones".
+  //
+  // Detrás de un servidor web la petición llega por HTTP aunque el visitante
+  // esté en HTTPS, y eso se sabe por `x-forwarded-proto`.
+  const esHttps =
+    request.nextUrl.protocol === "https:" ||
+    request.headers.get("x-forwarded-proto") === "https";
+
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
+    secureCookie: esHttps,
   });
 
   if (token) return conCabeceras(seguir(), csp);
