@@ -21,7 +21,6 @@ export function FormularioVecino() {
   const [calle, setCalle] = useState("");
   const [numero, setNumero] = useState("");
   const [observacion, setObservacion] = useState("");
-  const [contacto, setContacto] = useState("");
   const [foto, setFoto] = useState<File | null>(null);
   const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
 
@@ -68,7 +67,6 @@ export function FormularioVecino() {
       cuerpo.append("calle", calle);
       cuerpo.append("numero", numero);
       cuerpo.append("observacion", observacion);
-      cuerpo.append("contacto", contacto);
       cuerpo.append("foto", foto!);
 
       const respuesta = await fetch("/api/reclamos-vecinales", {
@@ -223,23 +221,9 @@ export function FormularioVecino() {
         />
       </Campo>
 
-      {/* Opcional: sirve para poder avisarle cómo sigue, pero exigirlo dejaría
-          afuera a quien no tiene correo o no quiere darlo, que es justamente
-          la gente que hoy tiene que ir hasta la delegación. */}
-      <Campo
-        etiqueta="Tu correo (opcional)"
-        ayuda="Sólo si querés que te avisemos cómo sigue el reclamo"
-      >
-        <input
-          className="campo"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={contacto}
-          onChange={(e) => setContacto(e.target.value)}
-          placeholder="tunombre@ejemplo.com"
-        />
-      </Campo>
+      {/* El correo ya no se pide: sale de la cuenta con la que entró, que es
+          un dato verificado por Google en vez de tipeado a mano. Un campo
+          menos es gente que llega hasta el final. */}
 
       {error && (
         <p className="rounded-lg border border-red-200 bg-[var(--color-mal-fondo)] px-4 py-3 text-sm text-[var(--color-mal)]">
@@ -252,7 +236,8 @@ export function FormularioVecino() {
       </button>
 
       <p className="text-center text-xs text-[var(--color-tinta-3)]">
-        Al enviarlo te damos un número de seguimiento para ver cómo sigue.
+        Te damos un número de seguimiento, y el reclamo queda guardado en tu
+        cuenta.
       </p>
     </form>
   );

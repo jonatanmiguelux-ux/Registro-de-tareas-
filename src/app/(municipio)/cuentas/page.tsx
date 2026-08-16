@@ -15,6 +15,10 @@ export default async function PaginaCuentas() {
   const yo = await requerirAdministrador();
 
   const usuarios = await prisma.user.findMany({
+    // Sólo el personal. Las cuentas de vecino no piden aprobación ni ven nada
+    // del municipio: mezclarlas acá taparía a los tres o cuatro empleados con
+    // cientos de filas que no requieren ninguna decisión.
+    where: { tipo: "PERSONAL" },
     orderBy: [{ creadoEn: "asc" }],
     select: {
       id: true,
@@ -37,8 +41,9 @@ export default async function PaginaCuentas() {
       <div>
         <h1 className="titulo-pagina">Cuentas</h1>
         <p className="bajada mt-1.5">
-          Quién puede entrar a la app y qué puede hacer. Iniciar sesión con
-          Google no alcanza: la cuenta tiene que estar habilitada acá.
+          Quién del municipio puede entrar y qué puede hacer. Iniciar sesión
+          con Google no alcanza: la cuenta tiene que estar habilitada acá. Las
+          cuentas de vecinos no aparecen en esta lista.
         </p>
       </div>
 

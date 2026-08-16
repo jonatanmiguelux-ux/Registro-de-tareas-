@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FormularioVecino } from "@/components/FormularioVecino";
+import { requerirVecino } from "@/lib/sesion";
 
 export const metadata: Metadata = {
   title: "Reclamar una luminaria",
@@ -14,7 +15,11 @@ export const metadata: Metadata = {
  * entra. Por eso no muestra nada del municipio —ni planillas, ni stock, ni
  * quién trabaja— y sólo sabe crear reclamos.
  */
-export default function PaginaReclamar() {
+export const dynamic = "force-dynamic";
+
+export default async function PaginaReclamar() {
+  await requerirVecino();
+
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>

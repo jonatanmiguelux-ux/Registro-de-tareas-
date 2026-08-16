@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -42,16 +43,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   events: {
     /**
-     * La primera cuenta del sistema queda administradora y activa.
+     * Decide qué clase de cuenta es la que se acaba de crear.
      *
      * Se hace en `createUser`, que corre una sola vez por persona y después de
-     * que la fila existe: contarlas en el callback de `signIn` daría cero para
-     * todos los que entren a la vez en el arranque.
+     * que la fila existe.
+     *
+     * **Un vecino queda activo al instante y un empleado queda en espera.** La
+     * diferencia la marca una galleta que deja la pantalla de ingreso del
+     * vecino justo antes de mandar a Google (ver `marcarAltaDeVecino`): es lo
+     * único que distingue de qué lado del mostrador vino la persona, porque
+     * Google contesta lo mismo en los dos casos.
+     *
+     * Si esa marca no está, la cuenta nace como personal y en espera. Ante la
+     * duda, el lado seguro es el que pide aprobación.
      */
     async createUser({ user }) {
       if (!user.id) return;
-      const cuantas = await prisma.user.count();
-      if (cuantas === 1) {
+
+      const galletas = await cookies();
+      const esVecino = galletas.get(MARCA_VECINO)?.value === "1";
+
+      if (esVecino) {
+        // No necesita que nadie lo habilite: sólo va a poder cargar reclamos
+        // y ver los suyos. Nunca ve nada del municipio.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { tipo: "VECINO", estado: "ACTIVO" },
+        });
+        return;
+      }
+
+      // La primera cuenta del personal queda administradora: si no, no habría
+      // nadie que pudiera aprobar a nadie y la app arrancaría trabada.
+      const empleados = await prisma.user.count({ where: { tipo: "PERSONAL" } });
+      if (empleados === 1) {
         await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -65,3 +90,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 });
+
+/** Nombre de la galleta que marca que el alta viene del lado del vecino. */
+export const MARCA_VECINO = "alta-vecino";
+
+/**
+ * Deja la marca antes de mandar a Google.
+ *
+ * Dura poco: sólo tiene que sobrevivir la ida y vuelta al proveedor. Si
+ * quedara mucho tiempo, alguien que entró como vecino y después intenta
+ * entrar como empleado se crearía la cuenta del lado equivocado.
+ */
+export async function marcarAltaDeVecino() {
+  const galletas = await cookies();
+  galletas.set(MARCA_VECINO, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 10,
+    path: "/",
+  });
+}

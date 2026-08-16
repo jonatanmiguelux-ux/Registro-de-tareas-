@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { RolUsuario, EstadoUsuario } from "@prisma/client";
+import type { RolUsuario, EstadoUsuario, TipoUsuario } from "@prisma/client";
 
 /**
  * Quién está usando la app, resuelto **contra la base**.
@@ -18,6 +18,7 @@ export type Usuario = {
   nombre: string | null;
   email: string | null;
   imagen: string | null;
+  tipo: TipoUsuario;
   rol: RolUsuario;
   estado: EstadoUsuario;
 };
@@ -35,6 +36,7 @@ export async function usuarioActual(): Promise<Usuario | null> {
       name: true,
       email: true,
       image: true,
+      tipo: true,
       rol: true,
       estado: true,
     },
@@ -47,6 +49,7 @@ export async function usuarioActual(): Promise<Usuario | null> {
     nombre: fila.name,
     email: fila.email,
     imagen: fila.image,
+    tipo: fila.tipo,
     rol: fila.rol,
     estado: fila.estado,
   };
@@ -61,7 +64,25 @@ export async function usuarioActual(): Promise<Usuario | null> {
 export async function requerirUsuario(): Promise<Usuario> {
   const usuario = await usuarioActual();
   if (!usuario) redirect("/acceso");
+  // Una cuenta de vecino no entra acá ni aunque tenga sesión válida. En
+  // producción los dominios ya las separan; esto cubre el caso de que un día
+  // convivan en uno solo, y es la clase de control que conviene tener aunque
+  // parezca redundante.
+  if (usuario.tipo === "VECINO") redirect("/alumbrado");
   if (usuario.estado !== "ACTIVO") redirect("/acceso/pendiente");
+  return usuario;
+}
+
+/**
+ * Exige una sesión de vecino. Para la app pública.
+ *
+ * Un empleado que entre por el lado del vecino pasa igual: no tiene sentido
+ * impedirle reportar una luz quemada en su cuadra por trabajar en el
+ * municipio.
+ */
+export async function requerirVecino(): Promise<Usuario> {
+  const usuario = await usuarioActual();
+  if (!usuario) redirect("/ingresar");
   return usuario;
 }
 
@@ -94,6 +115,16 @@ export async function usuarioDeApi(): Promise<
     };
   }
 
+  if (usuario.tipo === "VECINO") {
+    return {
+      ok: false,
+      respuesta: Response.json(
+        { error: "Esta cuenta no tiene acceso al sistema del municipio." },
+        { status: 403 },
+      ),
+    };
+  }
+
   if (usuario.estado !== "ACTIVO") {
     return {
       ok: false,
@@ -103,6 +134,30 @@ export async function usuarioDeApi(): Promise<
             "Tu cuenta todavía no está habilitada. Pedile a un administrador que te dé acceso.",
         },
         { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true, usuario };
+}
+
+/**
+ * Sesión de vecino para los endpoints públicos.
+ *
+ * No exige que la cuenta esté habilitada: un vecino no necesita aprobación de
+ * nadie para reportar una luz quemada.
+ */
+export async function vecinoDeApi(): Promise<
+  { ok: true; usuario: Usuario } | { ok: false; respuesta: Response }
+> {
+  const usuario = await usuarioActual();
+
+  if (!usuario) {
+    return {
+      ok: false,
+      respuesta: Response.json(
+        { error: "Hay que iniciar sesión para cargar un reclamo." },
+        { status: 401 },
       ),
     };
   }

@@ -28,13 +28,11 @@ const PUBLICAS = [
   "/sw.js",
   "/sin-conexion.html",
   "/icono",
-  // Lo del vecino: la página que explica el servicio, la carga del reclamo y
-  // su seguimiento. Sin cuenta. Es lo único de la app abierto a internet, y
-  // por eso sus endpoints validan todo en el servidor y tienen tope por hora.
+  // Lo del vecino que no necesita cuenta: la página que explica el servicio y
+  // la pantalla de ingreso. Reportar, ver un reclamo y ver los propios sí
+  // exigen sesión, y eso lo resuelve cada pantalla contra la base.
   "/alumbrado",
-  "/reclamar",
-  "/reclamo",
-  "/api/reclamos-vecinales",
+  "/ingresar",
 ];
 
 /**
@@ -51,9 +49,16 @@ function permitidaParaVecinos(ruta: string): boolean {
   return (
     ruta === "/" ||
     ruta === "/alumbrado" ||
+    ruta === "/ingresar" ||
     ruta === "/reclamar" ||
+    ruta === "/mis-reclamos" ||
     ruta.startsWith("/reclamo/") ||
     ruta === "/api/reclamos-vecinales" ||
+    // El encabezado consulta quién está conectado para mostrar "Mis reclamos".
+    ruta === "/api/sesion" ||
+    // El ingreso con Google pasa por acá: sin esto, el vecino no podría
+    // entrar desde su propio dominio.
+    ruta.startsWith("/api/auth/") ||
     ruta.startsWith("/icono/") ||
     ruta === "/favicon.ico"
   );

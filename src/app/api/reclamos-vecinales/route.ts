@@ -4,6 +4,7 @@ import { guardarImagen } from "@/lib/almacenamiento";
 import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { cuadrillaDeLocalidad } from "@/lib/cuadrillas";
+import { vecinoDeApi } from "@/lib/sesion";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import {
   correoValido,
@@ -17,12 +18,13 @@ export const runtime = "nodejs";
 const TAMANIO_MAXIMO = 20 * 1024 * 1024;
 
 /**
- * Tope por hora desde una misma conexión.
+ * Tope de reclamos por hora y por cuenta.
  *
- * Es lo único que frena la carga masiva: al no haber verificación ni cuenta,
- * no hay otra forma de distinguir a un vecino de un script.
+ * Se cuenta por cuenta y no por conexión: una familia comparte el wifi y no
+ * tiene por qué compartir el tope, y una cuenta de Google es más trabajosa de
+ * multiplicar que una dirección de internet.
  */
-const POR_HORA_POR_IP = 5;
+const POR_HORA = 5;
 
 const TIPOS_VALIDOS: TipoFalla[] = ["NO_FUNCIONA", "ENCENDIDA", "INTERMITENTE"];
 
@@ -36,9 +38,14 @@ const TIPOS_VALIDOS: TipoFalla[] = ["NO_FUNCIONA", "ENCENDIDA", "INTERMITENTE"];
  *   valida el formulario en el navegador es una comodidad, no una defensa:
  *   acá se puede llegar sin pasar por él.
  * - La foto se verifica por su contenido, igual que las de las planillas.
- * - Hay tope por hora y por conexión.
+ * - Hay tope de reclamos por hora y por cuenta.
  */
 export async function POST(request: Request) {
+  // Reportar exige cuenta. El correo ya no se pide en el formulario: sale de
+  // la sesión, que es un dato verificado por Google en vez de tipeado a mano.
+  const sesion = await vecinoDeApi();
+  if (!sesion.ok) return sesion.respuesta;
+
   const formulario = await request.formData().catch(() => null);
   if (!formulario) {
     return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
@@ -51,7 +58,6 @@ export async function POST(request: Request) {
   const calle = texto("calle");
   const numero = texto("numero");
   const observacion = texto("observacion");
-  const contacto = normalizarCorreo(texto("contacto"));
   const foto = formulario.get("foto");
 
   // Un mensaje por campo: "faltan datos" obliga a adivinar cuál.
@@ -75,15 +81,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // Opcional, pero si lo escriben tiene que tener forma de correo: uno mal
-  // tipeado es peor que ninguno, porque el aviso nunca llega y nadie se entera.
-  if (contacto && !correoValido(contacto)) {
-    return NextResponse.json(
-      { error: "Revisá el correo: no parece una dirección válida." },
-      { status: 400 },
-    );
-  }
-
   if (observacion.length > 1000) {
     return NextResponse.json(
       { error: "La descripción es demasiado larga." },
@@ -99,17 +96,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // Detrás de Caddy la IP real llega en esta cabecera.
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "desconocida";
-
   const desdeHaceUnaHora = new Date(Date.now() - 60 * 60 * 1000);
   const recientes = await prisma.reclamoVecinal.count({
-    where: { notaInterna: `ip:${ip}`, creadoEn: { gte: desdeHaceUnaHora } },
+    where: { vecinoId: sesion.usuario.id, creadoEn: { gte: desdeHaceUnaHora } },
   });
-  if (recientes >= POR_HORA_POR_IP) {
+  if (recientes >= POR_HORA) {
     return NextResponse.json(
       {
         error:
@@ -145,9 +136,8 @@ export async function POST(request: Request) {
       numero,
       observacion,
       fotoRuta,
-      contacto: contacto || null,
-      // La IP se guarda acá sólo para poder contar por hora. No se muestra.
-      notaInterna: `ip:${ip}`,
+      vecinoId: sesion.usuario.id,
+      contacto: sesion.usuario.email,
     },
     select: { codigo: true },
   });

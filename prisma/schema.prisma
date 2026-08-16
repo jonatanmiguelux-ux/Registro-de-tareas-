@@ -27,6 +27,21 @@ enum EstadoUsuario {
   BLOQUEADO
 }
 
+/// De qué lado del mostrador está una cuenta.
+///
+/// Sin esta distinción, cada vecino que entrara aparecería en la pantalla de
+/// Cuentas del municipio pidiendo aprobación, mezclado con los tres o cuatro
+/// empleados. En un partido con reclamos de alumbrado eso son cientos de filas
+/// que tapan lo único que ahí importa.
+enum TipoUsuario {
+  /// Carga reclamos desde la app pública. No necesita aprobación y no ve nada
+  /// del municipio.
+  VECINO
+  /// Trabaja en el municipio. Nace en espera hasta que un administrador lo
+  /// habilita.
+  PERSONAL
+}
+
 /// Una persona que usa la app.
 ///
 /// La forma de los primeros campos y las tres tablas que siguen (Account,
@@ -40,6 +55,10 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  /// De qué lado del mostrador está. El valor por defecto es PERSONAL para que
+  /// una cuenta creada por cualquier camino que no sea el del vecino nazca
+  /// necesitando aprobación: si algo falla, que falle del lado seguro.
+  tipo   TipoUsuario   @default(PERSONAL)
   rol    RolUsuario    @default(OPERARIO)
   estado EstadoUsuario @default(PENDIENTE)
 
@@ -50,12 +69,16 @@ model User {
   accounts Account[]
   sessions Session[]
 
+  reclamosVecinales   ReclamoVecinal[]
   planillasCargadas   Planilla[] @relation("cargadaPor")
   planillasConfirmadas Planilla[] @relation("confirmadaPor")
 
   creadoEn DateTime @default(now())
 
   @@index([estado])
+  // Los vecinos van a ser muchos más que los empleados: filtrar por tipo es
+  // lo que hace la pantalla de Cuentas en cada carga.
+  @@index([tipo, estado])
   @@map("usuarios")
 }
 
@@ -340,9 +363,14 @@ model ReclamoVecinal {
   /// Foto de la luminaria. Se guarda igual que las de las planillas.
   fotoRuta String
 
-  /// Correo del vecino, opcional: sirve para poder avisarle cómo sigue.
-  /// Exigirlo dejaría afuera a quien no tiene o no quiere darlo, que es
-  /// justamente la gente que hoy tiene que ir hasta la delegación.
+  /// Quién lo cargó. Con el registro obligatorio siempre hay alguien detrás,
+  /// pero el vínculo es opcional para no perder reclamos si un día se da de
+  /// baja una cuenta: el histórico vale más que la cuenta.
+  vecinoId String?
+  vecino   User?   @relation(fields: [vecinoId], references: [id], onDelete: SetNull)
+
+  /// Copia del correo al momento de cargar. Se guarda aparte del vínculo para
+  /// poder contactar a quien reportó aunque su cuenta ya no exista.
   contacto String?
 
   estado EstadoReclamoVecinal @default(RECIBIDO)
@@ -359,6 +387,7 @@ model ReclamoVecinal {
   creadoEn DateTime @default(now())
 
   @@index([estado, creadoEn])
+  @@index([vecinoId, creadoEn])
   @@index([cuadrilla, estado])
   @@index([localidad, calle])
   @@map("reclamos_vecinales")

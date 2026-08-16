@@ -81,9 +81,9 @@ un sistema que los emite, y dos numeraciones conviviendo terminarían en que la
 cuadrilla recibe papeles que no cierran con el sistema. Esto es una puerta de
 entrada, no un reemplazo:
 
-1. El vecino carga tipo de falla, localidad, calle, altura, una foto y una
-   descripción. Todo obligatorio; el correo es opcional, sólo para poder
-   avisarle cómo sigue.
+1. El vecino entra con su cuenta de Google y carga tipo de falla, localidad,
+   calle, altura, una foto y una descripción. Todo obligatorio. El correo no
+   se pide: sale de la cuenta.
 2. Aparece en **Vecinos**, la bandeja del municipio.
 3. Alguien lo carga en el sistema oficial y anota acá el N.º de incidente que
    ese sistema devuelve.
@@ -140,12 +140,29 @@ La **foto del vecino y la edición del reclamo exigen sesión**, aunque estén
 bajo la misma carpeta de rutas que la parte pública: sin ese control, cualquiera
 con un código de seguimiento podría mirar fotos de casas ajenas.
 
-**No hay verificación de identidad**: cualquiera con el enlace puede cargar un
-reclamo, y lo único que frena la carga masiva es el tope por hora y por
-conexión. Es una decisión, no un olvido: pedir un código de confirmación
-dejaba afuera a quien no tiene correo o no quiere darlo, que es justamente la
-gente que hoy tiene que ir hasta la delegación. Si aparece abuso real, el paso
-de verificación se puede reponer.
+### Registrarse es obligatorio
+
+Para reportar hay que entrar con una cuenta de Google. No hay registro que
+completar ni contraseña que inventar: es la cuenta que la persona ya tiene. A
+cambio, ve todos sus reclamos juntos en **Mis reclamos**, sin tener que haber
+guardado cada número de seguimiento.
+
+**Las cuentas de vecino son de otra clase que las del personal.** Nacen
+activas —no necesitan que nadie las apruebe, sólo sirven para reportar— y **no
+aparecen en la pantalla de Cuentas del municipio**. Sin esa distinción, cada
+vecino que entrara caería en la lista de aprobaciones pendientes, mezclado con
+los tres o cuatro empleados; en un partido con reclamos de alumbrado eso son
+cientos de filas tapando lo único que ahí importa.
+
+Lo que distingue de qué lado viene un alta es una galleta que deja la pantalla
+de ingreso del vecino justo antes de mandar a Google: es lo único que las
+diferencia, porque Google contesta lo mismo en los dos casos. Si esa marca
+falta, la cuenta nace como personal y en espera — ante la duda, el lado que
+pide aprobación.
+
+Un vecino no entra a nada del municipio aunque tenga sesión válida, y el tope
+de reclamos por hora se cuenta **por cuenta y no por conexión**: una familia
+comparte el wifi y no tiene por qué compartir el tope.
 
 ## Las pantallas
 
@@ -158,7 +175,8 @@ de verificación se puede reponer.
 | **Vecinos** | Los reclamos que cargó la gente, para pasarlos al sistema oficial |
 | **Cuadrillas y zonas** | Qué localidades cubre cada equipo (administradores) |
 | **Alumbrado** | Pública: explica el servicio al vecino |
-| **Reclamar** | Pública, sin cuenta: donde el vecino carga su reclamo |
+| **Mis reclamos** | Lo que reportó el vecino, con su cuenta |
+| **Reclamar** | Donde el vecino carga su reclamo (con cuenta) |
 
 Los filtros (fecha, cuadrilla, estado, incidente) viven en la query string: se
 comparten con un link, sobreviven al refresh y son exactamente lo que exporta

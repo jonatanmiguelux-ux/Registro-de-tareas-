@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatearMomento } from "@/lib/fechas";
 import { etiquetaDeFalla } from "@/lib/reclamos-vecinales";
+import { requerirVecino } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function PaginaSeguimiento({
 }: {
   params: Promise<{ codigo: string }>;
 }) {
+  await requerirVecino();
   const { codigo } = await params;
 
   const reclamo = await prisma.reclamoVecinal.findUnique({
