@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 const SECCIONES = [
   { href: "/", texto: "Cargar", icono: Camara },
   { href: "/registros", texto: "Registros", icono: Lista },
+  { href: "/vecinos", texto: "Vecinos", icono: Vecinos },
   { href: "/tablero", texto: "Tablero", icono: Grafico },
   { href: "/stock", texto: "Stock", icono: Caja },
 ] as const;
@@ -25,8 +26,25 @@ function estaActiva(href: string, ruta: string): boolean {
   return ruta === href || ruta.startsWith(`${href}/`);
 }
 
+/**
+ * Pantallas que usa gente de la calle, sin cuenta.
+ *
+ * Ahí no va la navegación del municipio: mostrarle a un vecino enlaces a
+ * Registros, Tablero y Stock sólo consigue que los toque y termine en una
+ * pantalla de login que no le corresponde.
+ */
+function esPublica(ruta: string): boolean {
+  return (
+    ruta === "/reclamar" ||
+    ruta.startsWith("/reclamo/") ||
+    ruta.startsWith("/acceso")
+  );
+}
+
 export function NavegacionSuperior() {
   const ruta = usePathname();
+
+  if (esPublica(ruta)) return null;
 
   return (
     <nav className="hidden items-center gap-1 sm:flex">
@@ -54,12 +72,14 @@ export function NavegacionSuperior() {
 export function NavegacionInferior() {
   const ruta = usePathname();
 
+  if (esPublica(ruta)) return null;
+
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-borde)] bg-white/95 backdrop-blur sm:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {SECCIONES.map((s) => {
           const activa = estaActiva(s.href, ruta);
           const Icono = s.icono;
@@ -150,6 +170,22 @@ function Grafico({ activa }: Props) {
       />
       <rect x="3.5" y="4" width="17" height="16" rx="2.5" />
       <path d="M8 15.5v-3M12 15.5v-6M16 15.5v-4" />
+    </svg>
+  );
+}
+
+function Vecinos({ activa }: Props) {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path
+        d="M4 19.5v-1.2a4.3 4.3 0 0 1 4.3-4.3h2.4a4.3 4.3 0 0 1 4.3 4.3v1.2z"
+        fill={activa ? "currentColor" : "none"}
+        opacity={activa ? 0.16 : 1}
+      />
+      <path d="M4 19.5v-1.2a4.3 4.3 0 0 1 4.3-4.3h2.4a4.3 4.3 0 0 1 4.3 4.3v1.2z" />
+      <circle cx="9.5" cy="8" r="3.3" fill={activa ? "currentColor" : "none"} opacity={activa ? 0.16 : 1} />
+      <circle cx="9.5" cy="8" r="3.3" />
+      <path d="M16.5 19.5v-1.4a4.3 4.3 0 0 0-2-3.6M15.2 5.2a3.3 3.3 0 0 1 0 5.7" />
     </svg>
   );
 }

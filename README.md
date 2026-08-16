@@ -29,6 +29,45 @@ Funciona igual en celular y en PC.
 8. **Exportar** — `.xlsx` de un día o de un período, con los mismos filtros
    que la pantalla.
 
+## Los reclamos de los vecinos
+
+Hoy, para reportar una luz quemada, un vecino tiene que ir hasta la
+delegación. La app suma una pantalla pública —**`/reclamar`**— donde lo carga
+desde el celular en un minuto.
+
+**No genera números de incidente propios**, a propósito. El municipio ya tiene
+un sistema que los emite, y dos numeraciones conviviendo terminarían en que la
+cuadrilla recibe papeles que no cierran con el sistema. Esto es una puerta de
+entrada, no un reemplazo:
+
+1. El vecino carga tipo de falla, localidad, calle, altura, una foto y una
+   descripción. Todo obligatorio.
+2. Le llega un código por correo y lo confirma. Recién ahí el reclamo entra:
+   es lo que evita que alguien cargue cien reclamos falsos.
+3. Aparece en **Vecinos**, la bandeja del municipio.
+4. Alguien lo carga en el sistema oficial y anota acá el N.º de incidente que
+   ese sistema devuelve.
+5. El vecino ve el estado con su número de seguimiento, sin cuenta ni
+   contraseña.
+
+Las tres fallas que puede reportar son **no funciona**, **encendida de día** e
+**intermitente**.
+
+Esta parte está aislada del resto: tabla propia, sin tocar planillas, stock ni
+reclamos de cuadrilla. Es lo único de la app abierto a internet, así que todo
+se valida en el servidor —lo del navegador es una comodidad, no una defensa—,
+la foto se verifica por su contenido y hay tope por hora y por conexión.
+
+La **foto del vecino y la edición del reclamo exigen sesión**, aunque estén
+bajo la misma carpeta de rutas que la parte pública: sin ese control, cualquiera
+con un código de seguimiento podría mirar fotos de casas ajenas, y esos códigos
+circulan por correo.
+
+Para que los códigos se envíen hay que configurar una cuenta de correo (ver
+`SMTP_*` en `.env.example`). Sin configurar, el código se escribe en la consola
+del servidor: alcanza para probar en una PC, y la pantalla de Vecinos avisa si
+falta.
+
 ## Las pantallas
 
 | Pantalla | Para qué |
@@ -37,6 +76,8 @@ Funciona igual en celular y en PC.
 | **Registros** | Historial agrupado por día, búsqueda por incidente y filtros |
 | **Tablero** | Totales, pendientes, resumen diario y consumo por material |
 | **Stock** | Stock inicial, entradas, salidas y stock actual |
+| **Vecinos** | Los reclamos que cargó la gente, para pasarlos al sistema oficial |
+| **Reclamar** | Pública, sin cuenta: donde el vecino carga su reclamo |
 
 Los filtros (fecha, cuadrilla, estado, incidente) viven en la query string: se
 comparten con un link, sobreviven al refresh y son exactamente lo que exporta

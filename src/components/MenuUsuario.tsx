@@ -45,8 +45,15 @@ export function MenuUsuario() {
     return () => document.removeEventListener("click", cerrar);
   }, [abierto]);
 
-  // En la pantalla de acceso no hay nada que mostrar.
-  if (!usuario || ruta.startsWith("/acceso")) return null;
+  // Ni en la pantalla de acceso ni en las que usa el vecino: ahí no hay
+  // sesión que mostrar, y si la hubiera —un empleado mirando el formulario
+  // público— tampoco corresponde.
+  const enPublica =
+    ruta.startsWith("/acceso") ||
+    ruta === "/reclamar" ||
+    ruta.startsWith("/reclamo/");
+
+  if (!usuario || enPublica) return null;
 
   const nombreCorto = (usuario.nombre ?? usuario.email ?? "").split(" ")[0];
 

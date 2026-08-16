@@ -283,3 +283,81 @@ model MovimientoStock {
   @@index([tipo])
   @@map("movimientos_stock")
 }
+
+// ---------------------------------------------------------------------------
+// Reclamos que cargan los vecinos.
+//
+// Esta parte es independiente de todo lo anterior: no toca las planillas, ni
+// los reclamos de las cuadrillas, ni el stock. Un vecino carga acá lo que hoy
+// tiene que ir a decir a la delegación, y alguien del municipio lo pasa al
+// sistema oficial, que es el que sigue emitiendo el N.º de incidente.
+//
+// A propósito NO se genera un número propio: dos numeraciones conviviendo
+// terminarían en que la cuadrilla recibe papeles que no cierran con el
+// sistema. Acá se guarda el número oficial una vez que existe.
+// ---------------------------------------------------------------------------
+
+/// Qué le pasa a la luminaria, según el vecino.
+enum TipoFalla {
+  /// No enciende.
+  NO_FUNCIONA
+  /// Queda prendida de día.
+  ENCENDIDA
+  /// Prende y apaga sola.
+  INTERMITENTE
+}
+
+enum EstadoReclamoVecinal {
+  /// Cargado, pero el vecino todavía no confirmó su correo.
+  SIN_VERIFICAR
+  /// Verificado y a la espera de que alguien lo pase al sistema oficial.
+  RECIBIDO
+  /// Ya cargado en el sistema oficial: tiene N.º de incidente.
+  DERIVADO
+  /// Se descartó (repetido, fuera de jurisdicción, sin datos suficientes).
+  DESCARTADO
+}
+
+model ReclamoVecinal {
+  id String @id @default(cuid())
+
+  /// Código corto que se le da al vecino para seguir su reclamo.
+  /// Es lo único que sale a la calle: no expone el id interno.
+  codigo String @unique
+
+  tipo         TipoFalla
+  localidad    String
+  calle        String
+  numero       String
+  observacion  String
+
+  /// Foto de la luminaria. Se guarda igual que las de las planillas.
+  fotoRuta String
+
+  /// Correo del vecino, verificado con un código antes de que el reclamo
+  /// entre. Es lo que frena que alguien cargue cien reclamos falsos.
+  contacto String
+
+  estado EstadoReclamoVecinal @default(SIN_VERIFICAR)
+
+  /// Código de verificación, guardado como hash: si alguien llegara a leer la
+  /// base, no le sirve para confirmar reclamos ajenos.
+  verificacionHash    String?
+  verificacionExpira  DateTime?
+  verificacionIntentos Int      @default(0)
+  verificadoEn        DateTime?
+
+  /// El número que devuelve el sistema oficial al cargarlo, y quién lo cargó.
+  nroIncidente String?
+  derivadoEn   DateTime?
+  derivadoPor  String?
+
+  /// Nota interna del municipio. No se le muestra al vecino.
+  notaInterna String?
+
+  creadoEn DateTime @default(now())
+
+  @@index([estado, creadoEn])
+  @@index([localidad, calle])
+  @@map("reclamos_vecinales")
+}

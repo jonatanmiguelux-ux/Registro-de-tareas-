@@ -28,6 +28,12 @@ const PUBLICAS = [
   "/sw.js",
   "/sin-conexion.html",
   "/icono",
+  // Lo del vecino: carga un reclamo y sigue su estado, sin cuenta. Es lo
+  // único de la app abierto a internet, y por eso sus endpoints validan todo
+  // en el servidor y tienen tope por hora.
+  "/reclamar",
+  "/reclamo",
+  "/api/reclamos-vecinales",
 ];
 
 function esPublica(ruta: string): boolean {
