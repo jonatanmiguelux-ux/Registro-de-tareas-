@@ -397,6 +397,7 @@ src/lib/schema.ts           Forma de la respuesta de la IA (zod)
 src/lib/gemini-schema.ts    Traducción de ese zod al esquema que acepta Gemini
 src/lib/localidades.ts      Siglas de localidad → nombre completo
 src/lib/cuadrillas.ts       Zonas: qué cuadrilla atiende cada localidad
+docs/pagina-vecinos.md      Criterio de la página pública: qué decir y cómo se ve
 src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx
 src/lib/materiales.ts       Catálogo de columnas, con alta automática
