@@ -26,3 +26,9 @@ Thumbs.db
 next-env.d.ts
 .vercel
 tsconfig.tsbuildinfo
+
+# Respaldos: el registro de lo que fue pasando y la carpeta de reserva que se
+# usa sólo cuando la nube no está disponible. Son de esta máquina, no del
+# proyecto.
+respaldo.log
+respaldos/

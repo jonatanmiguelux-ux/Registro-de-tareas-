@@ -1,0 +1,7 @@
+{
+  "_ayuda_destino": "Carpeta donde dejar el .xlsx de cada dia. Si lo dejas vacio se busca solo: primero Google Drive, y si no esta instalado, OneDrive. Para elegirla a mano escribi la ruta completa, con doble barra invertida. Ejemplo: \"G:\\\\Mi unidad\\\\Alumbrado publico\"",
+  "destino": "",
+
+  "_ayuda_conservar": "Cuantos archivos guardar antes de ir borrando los mas viejos. 60 son unos tres meses de dias habiles.",
+  "conservar": 60
+}
