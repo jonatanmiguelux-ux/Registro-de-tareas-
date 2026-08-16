@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { guardarImagen } from "@/lib/almacenamiento";
 import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
+import { cuadrillaDeLocalidad } from "@/lib/cuadrillas";
 import {
   correoValido,
   generarCodigoSeguimiento,
@@ -127,13 +128,18 @@ export async function POST(request: Request) {
 
   const codigo = generarCodigoSeguimiento();
 
+  // Se guarda con el nombre completo, igual que en las planillas, para que un
+  // día se puedan cruzar los dos lados por localidad.
+  const localidadNormalizada = normalizarLocalidad(localidad) ?? localidad;
+
   const reclamo = await prisma.reclamoVecinal.create({
     data: {
       codigo,
       tipo,
-      // Se guarda con el nombre completo, igual que en las planillas, para
-      // que un día se puedan cruzar los dos lados por localidad.
-      localidad: normalizarLocalidad(localidad) ?? localidad,
+      localidad: localidadNormalizada,
+      // La zona decide sola a qué cuadrilla le toca: nadie tiene que mirar un
+      // mapa ni acordarse de quién cubre qué.
+      cuadrilla: cuadrillaDeLocalidad(localidadNormalizada),
       calle,
       numero,
       observacion,

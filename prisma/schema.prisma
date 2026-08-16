@@ -329,6 +329,14 @@ model ReclamoVecinal {
   numero       String
   observacion  String
 
+  /// A qué cuadrilla le toca, según la localidad. Se calcula al cargar.
+  ///
+  /// Es el mismo número que el Móvil N.º de la planilla de papel, así el
+  /// reclamo del vecino y el trabajo que después aparece en la planilla se
+  /// pueden cruzar. Queda en nulo si la localidad no está en ninguna zona:
+  /// adivinar mandaría un equipo a un lugar que no le toca.
+  cuadrilla Int?
+
   /// Foto de la luminaria. Se guarda igual que las de las planillas.
   fotoRuta String
 
@@ -351,6 +359,7 @@ model ReclamoVecinal {
   creadoEn DateTime @default(now())
 
   @@index([estado, creadoEn])
+  @@index([cuadrilla, estado])
   @@index([localidad, calle])
   @@map("reclamos_vecinales")
 }

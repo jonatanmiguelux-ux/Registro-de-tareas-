@@ -52,6 +52,35 @@ entrada, no un reemplazo:
 Las tres fallas que puede reportar son **no funciona**, **encendida de día** e
 **intermitente**.
 
+### A qué cuadrilla le toca
+
+El reclamo se deriva solo según la localidad. Nadie tiene que mirar un mapa ni
+acordarse de quién cubre qué:
+
+| Cuadrilla | Zona | Localidades |
+|---|---|---|
+| **1** | Nueva Atlantis y Mar de Ajó | Nueva Atlantis · Mar de Ajó |
+| **2** | De Costa Azul a Mar del Tuyú | Costa Azul · La Lucila · Aguas Verdes · Costa del Este · Mar del Tuyú |
+| **3** | Santa Teresita y Costa Chica | Santa Teresita · Costa Chica |
+| **4** | De Las Toninas a San Clemente | Las Toninas · San Clemente |
+
+El número de cuadrilla es el mismo que el **Móvil N.º** de la planilla de
+papel, así el reclamo del vecino y el trabajo que después aparece en la
+planilla se pueden cruzar.
+
+Las zonas son **tramos contiguos** sobre el orden en que el municipio nombra
+las localidades, que resulta ser el recorrido de la costa: por eso se
+describen como "de tal a tal" y no como listas sueltas. Hay un test que lo
+verifica, para que nadie reordene esa lista sin darse cuenta de que las zonas
+dependen de ella.
+
+Una localidad que no esté en ninguna zona —un lugar fuera del partido, o uno
+nuevo sin repartir— **no se deriva a nadie**: queda aparte y a la vista en la
+pantalla de Vecinos. Adivinar mandaría un equipo a un lugar que no le toca.
+
+El reparto se cambia en `src/lib/cuadrillas.ts`, y se ve dentro de la app en
+Vecinos → "Zonas de trabajo".
+
 Esta parte está aislada del resto: tabla propia, sin tocar planillas, stock ni
 reclamos de cuadrilla. Es lo único de la app abierto a internet, así que todo
 se valida en el servidor —lo del navegador es una comodidad, no una defensa—,
@@ -325,6 +354,7 @@ src/lib/ocr.ts              Lectura de la planilla con Gemini
 src/lib/schema.ts           Forma de la respuesta de la IA (zod)
 src/lib/gemini-schema.ts    Traducción de ese zod al esquema que acepta Gemini
 src/lib/localidades.ts      Siglas de localidad → nombre completo
+src/lib/cuadrillas.ts       Zonas: qué cuadrilla atiende cada localidad
 src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx
 src/lib/materiales.ts       Catálogo de columnas, con alta automática
