@@ -64,6 +64,22 @@ function permitidaParaVecinos(ruta: string): boolean {
   );
 }
 
+/**
+ * Rutas del vecino que exigen sesión.
+ *
+ * Importa distinguirlas porque **hay dos puertas de entrada**, y mandar a
+ * alguien a la equivocada no es un detalle estético: la cuenta se crea del
+ * lado equivocado. Quien entra por el login del municipio queda como empleado
+ * y en espera de aprobación, aunque sólo quisiera reportar una luz.
+ */
+function esDelVecino(ruta: string): boolean {
+  return (
+    ruta === "/reclamar" ||
+    ruta === "/mis-reclamos" ||
+    ruta.startsWith("/reclamo/")
+  );
+}
+
 /** ¿La petición entró por el dominio que se le da a los vecinos? */
 function esDominioDeVecinos(host: string | null): boolean {
   const configurado = process.env.DOMINIO_VECINOS?.trim().toLowerCase();
@@ -207,7 +223,11 @@ export default async function proxy(request: NextRequest) {
     );
   }
 
-  const destino = new URL("/acceso", request.url);
+  // Cada uno a su puerta: el vecino a la suya, el personal a la del municipio.
+  const destino = new URL(
+    esDelVecino(pathname) ? "/ingresar" : "/acceso",
+    request.url,
+  );
   // Para volver a donde iba después de entrar. Sólo rutas de este sitio: si
   // se aceptara cualquier valor, un enlace preparado podría usar el login
   // como trampolín hacia otra página.
