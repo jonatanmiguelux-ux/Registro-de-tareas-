@@ -37,7 +37,7 @@ cara propia:
 | | Para quién | Dominio |
 |---|---|---|
 | **La del municipio** | Cuadrillas y oficina, con cuenta | `registros-de-tareas.com.ar` |
-| **La del vecino** | Cualquiera, sin cuenta | `vecinos-lacosta.com.ar` |
+| **La del vecino** | Cualquier vecino, con cuenta de Google | `vecinos-lacosta.com.ar` |
 
 Los dos apuntan al mismo servidor. Adentro:
 
@@ -46,8 +46,8 @@ registros-de-tareas.com.ar          Cargar planillas (requiere sesión)
 registros-de-tareas.com.ar/tablero  Tablero, stock, registros, vecinos…
 
 vecinos-lacosta.com.ar              La página que explica el servicio
-vecinos-lacosta.com.ar/reclamar     El formulario
-vecinos-lacosta.com.ar/reclamo/XXX  El seguimiento, con el número de guía
+vecinos-lacosta.com.ar/reclamar     El formulario (pide entrar)
+vecinos-lacosta.com.ar/mis-reclamos Todo lo que reportó
 ```
 
 No comparten **nada visible**: ni nombre, ni encabezado, ni navegación. Quien
@@ -134,7 +134,8 @@ cada reorganización.
 Esta parte está aislada del resto: tabla propia, sin tocar planillas, stock ni
 reclamos de cuadrilla. Es lo único de la app abierto a internet, así que todo
 se valida en el servidor —lo del navegador es una comodidad, no una defensa—,
-la foto se verifica por su contenido y hay tope por hora y por conexión.
+la foto se verifica por su contenido y hay tope de reclamos por hora y por
+cuenta.
 
 La **foto del vecino y la edición del reclamo exigen sesión**, aunque estén
 bajo la misma carpeta de rutas que la parte pública: sin ese control, cualquiera
