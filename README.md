@@ -41,13 +41,12 @@ cuadrilla recibe papeles que no cierran con el sistema. Esto es una puerta de
 entrada, no un reemplazo:
 
 1. El vecino carga tipo de falla, localidad, calle, altura, una foto y una
-   descripción. Todo obligatorio.
-2. Le llega un código por correo y lo confirma. Recién ahí el reclamo entra:
-   es lo que evita que alguien cargue cien reclamos falsos.
-3. Aparece en **Vecinos**, la bandeja del municipio.
-4. Alguien lo carga en el sistema oficial y anota acá el N.º de incidente que
+   descripción. Todo obligatorio; el correo es opcional, sólo para poder
+   avisarle cómo sigue.
+2. Aparece en **Vecinos**, la bandeja del municipio.
+3. Alguien lo carga en el sistema oficial y anota acá el N.º de incidente que
    ese sistema devuelve.
-5. El vecino ve el estado con su número de seguimiento, sin cuenta ni
+4. El vecino ve el estado con su número de seguimiento, sin cuenta ni
    contraseña.
 
 Las tres fallas que puede reportar son **no funciona**, **encendida de día** e
@@ -60,13 +59,14 @@ la foto se verifica por su contenido y hay tope por hora y por conexión.
 
 La **foto del vecino y la edición del reclamo exigen sesión**, aunque estén
 bajo la misma carpeta de rutas que la parte pública: sin ese control, cualquiera
-con un código de seguimiento podría mirar fotos de casas ajenas, y esos códigos
-circulan por correo.
+con un código de seguimiento podría mirar fotos de casas ajenas.
 
-Para que los códigos se envíen hay que configurar una cuenta de correo (ver
-`SMTP_*` en `.env.example`). Sin configurar, el código se escribe en la consola
-del servidor: alcanza para probar en una PC, y la pantalla de Vecinos avisa si
-falta.
+**No hay verificación de identidad**: cualquiera con el enlace puede cargar un
+reclamo, y lo único que frena la carga masiva es el tope por hora y por
+conexión. Es una decisión, no un olvido: pedir un código de confirmación
+dejaba afuera a quien no tiene correo o no quiere darlo, que es justamente la
+gente que hoy tiene que ir hasta la delegación. Si aparece abuso real, el paso
+de verificación se puede reponer.
 
 ## Las pantallas
 

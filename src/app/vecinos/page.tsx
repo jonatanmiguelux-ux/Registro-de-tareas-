@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/sesion";
 import { formatearMomento } from "@/lib/fechas";
 import { etiquetaDeFalla } from "@/lib/reclamos-vecinales";
-import { correoConfigurado } from "@/lib/correo";
 import { AccionesReclamoVecinal } from "@/components/AccionesReclamoVecinal";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +11,11 @@ export const dynamic = "force-dynamic";
  *
  * Es la bandeja de entrada: lo que está esperando que alguien lo pase al
  * sistema oficial va arriba, porque es lo único con urgencia.
- *
- * Los que están SIN_VERIFICAR no se muestran: son reclamos que nadie confirmó
- * y que pueden ser de cualquiera. Mostrarlos ensuciaría la bandeja con ruido.
  */
 export default async function PaginaVecinos() {
   await requerirUsuario();
 
-  const [pendientes, resueltos, sinVerificar] = await Promise.all([
+  const [pendientes, resueltos] = await Promise.all([
     prisma.reclamoVecinal.findMany({
       where: { estado: "RECIBIDO" },
       orderBy: { creadoEn: "asc" },
@@ -29,7 +25,6 @@ export default async function PaginaVecinos() {
       orderBy: { creadoEn: "desc" },
       take: 50,
     }),
-    prisma.reclamoVecinal.count({ where: { estado: "SIN_VERIFICAR" } }),
   ]);
 
   return (
@@ -42,25 +37,11 @@ export default async function PaginaVecinos() {
         </p>
       </div>
 
-      {!correoConfigurado() && (
-        <p className="rounded-lg border border-[var(--color-alerta-borde)] bg-[var(--color-alerta-fondo)] px-4 py-3 text-sm">
-          <span className="font-semibold">Falta configurar el correo.</span> Sin
-          eso, los vecinos no reciben el código y ningún reclamo llega a
-          confirmarse. Hay que completar los datos de envío en la configuración
-          del servidor.
-        </p>
-      )}
-
       <section className="tarjeta overflow-hidden">
         <div className="tarjeta-titulo">
           <h2 className="text-sm font-semibold">
             Esperando que los cargues ({pendientes.length})
           </h2>
-          {sinVerificar > 0 && (
-            <span className="text-xs text-[var(--color-tinta-3)]">
-              {sinVerificar} más sin confirmar el correo
-            </span>
-          )}
         </div>
 
         {pendientes.length === 0 ? (

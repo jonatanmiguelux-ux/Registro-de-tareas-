@@ -34,8 +34,7 @@ export default function PaginaReclamar() {
         <ol className="mt-2 space-y-1.5 text-sm text-[var(--color-tinta-2)]">
           <li>
             <span className="font-medium text-[var(--color-tinta)]">1.</span>{" "}
-            Te llega un código por correo y lo confirmás. Eso evita reclamos
-            falsos.
+            Te damos un número de seguimiento en el momento.
           </li>
           <li>
             <span className="font-medium text-[var(--color-tinta)]">2.</span>{" "}

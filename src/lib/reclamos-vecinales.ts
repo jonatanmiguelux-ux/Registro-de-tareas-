@@ -1,4 +1,4 @@
-import { createHash, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
 import type { TipoFalla } from "@prisma/client";
 
 /**
@@ -49,30 +49,8 @@ export function generarCodigoSeguimiento(): string {
   return `${codigo.slice(0, 4)}-${codigo.slice(4)}`;
 }
 
-/** Código de verificación que se manda por correo. */
-export function generarCodigoVerificacion(): string {
-  return String(randomInt(100000, 1000000));
-}
-
 /**
- * El código de verificación se guarda como hash.
- *
- * No es información valiosa por sí misma, pero guardarlo en claro significa
- * que cualquiera con acceso de lectura a la base podría confirmar reclamos
- * ajenos, y no cuesta nada evitarlo.
- */
-export function hashearCodigo(codigo: string): string {
-  return createHash("sha256").update(codigo).digest("hex");
-}
-
-/** Minutos que vale el código antes de vencer. */
-export const MINUTOS_VALIDEZ = 30;
-
-/** Cuántas veces se puede errar el código antes de tener que empezar de nuevo. */
-export const INTENTOS_MAXIMOS = 5;
-
-/**
- * Normaliza un correo para comparar y guardar.
+ * Normaliza el correo de contacto para guardarlo.
  *
  * Sólo minúsculas y sin espacios: no se tocan los puntos ni los alias con `+`,
  * porque en algunos servidores son direcciones distintas de verdad.

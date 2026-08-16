@@ -3,13 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { guardarImagen } from "@/lib/almacenamiento";
 import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
-import { enviarCodigo } from "@/lib/correo";
 import {
   correoValido,
   generarCodigoSeguimiento,
-  generarCodigoVerificacion,
-  hashearCodigo,
-  MINUTOS_VALIDEZ,
   normalizarCorreo,
 } from "@/lib/reclamos-vecinales";
 import type { TipoFalla } from "@prisma/client";
@@ -18,7 +14,12 @@ export const runtime = "nodejs";
 
 const TAMANIO_MAXIMO = 20 * 1024 * 1024;
 
-/** Tope por hora desde una misma conexión, antes de verificar el correo. */
+/**
+ * Tope por hora desde una misma conexión.
+ *
+ * Es lo único que frena la carga masiva: al no haber verificación ni cuenta,
+ * no hay otra forma de distinguir a un vecino de un script.
+ */
 const POR_HORA_POR_IP = 5;
 
 const TIPOS_VALIDOS: TipoFalla[] = ["NO_FUNCIONA", "ENCENDIDA", "INTERMITENTE"];
@@ -33,8 +34,7 @@ const TIPOS_VALIDOS: TipoFalla[] = ["NO_FUNCIONA", "ENCENDIDA", "INTERMITENTE"];
  *   valida el formulario en el navegador es una comodidad, no una defensa:
  *   acá se puede llegar sin pasar por él.
  * - La foto se verifica por su contenido, igual que las de las planillas.
- * - Hay tope por hora y por conexión, y el reclamo no entra hasta que el
- *   vecino confirma el código que le llega por correo.
+ * - Hay tope por hora y por conexión.
  */
 export async function POST(request: Request) {
   const formulario = await request.formData().catch(() => null);
@@ -60,7 +60,6 @@ export async function POST(request: Request) {
   if (!numero) faltan.push("la altura");
   if (!observacion) faltan.push("una descripción");
   if (!(foto instanceof File) || foto.size === 0) faltan.push("una foto");
-  if (!contacto) faltan.push("tu correo");
 
   if (faltan.length > 0) {
     return NextResponse.json(
@@ -74,7 +73,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!correoValido(contacto)) {
+  // Opcional, pero si lo escriben tiene que tener forma de correo: uno mal
+  // tipeado es peor que ninguno, porque el aviso nunca llega y nadie se entera.
+  if (contacto && !correoValido(contacto)) {
     return NextResponse.json(
       { error: "Revisá el correo: no parece una dirección válida." },
       { status: 400 },
@@ -125,7 +126,6 @@ export async function POST(request: Request) {
   const fotoRuta = await guardarImagen(bytes, verificacion.tipo);
 
   const codigo = generarCodigoSeguimiento();
-  const verificador = generarCodigoVerificacion();
 
   const reclamo = await prisma.reclamoVecinal.create({
     data: {
@@ -138,23 +138,12 @@ export async function POST(request: Request) {
       numero,
       observacion,
       fotoRuta,
-      contacto,
-      verificacionHash: hashearCodigo(verificador),
-      verificacionExpira: new Date(Date.now() + MINUTOS_VALIDEZ * 60 * 1000),
+      contacto: contacto || null,
       // La IP se guarda acá sólo para poder contar por hora. No se muestra.
       notaInterna: `ip:${ip}`,
     },
     select: { codigo: true },
   });
 
-  const envio = await enviarCodigo(contacto, verificador, reclamo.codigo);
-
-  return NextResponse.json(
-    {
-      codigo: reclamo.codigo,
-      correoEnviado: envio.ok,
-      aviso: envio.ok ? null : envio.motivo,
-    },
-    { status: 201 },
-  );
+  return NextResponse.json({ codigo: reclamo.codigo }, { status: 201 });
 }

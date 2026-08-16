@@ -37,7 +37,6 @@ export function FormularioVecino() {
     numero: !numero.trim(),
     observacion: !observacion.trim(),
     foto: !foto,
-    contacto: !contacto.trim(),
   };
   const completo = !Object.values(faltantes).some(Boolean);
 
@@ -131,43 +130,43 @@ export function FormularioVecino() {
         </Falta>
       </fieldset>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Campo etiqueta="Localidad" falta={intentado && faltantes.localidad}>
-          <select
-            className="campo"
-            value={localidad}
-            onChange={(e) => setLocalidad(e.target.value)}
-          >
-            <option value="">Elegí una…</option>
-            {LOCALIDADES.map((l) => (
-              <option key={l.sigla} value={l.nombre}>
-                {l.nombre}
-              </option>
-            ))}
-          </select>
-        </Campo>
-
-        <Campo
-          etiqueta="Altura"
-          ayuda="El número de la casa más cercana"
-          falta={intentado && faltantes.numero}
+      <Campo etiqueta="Localidad" falta={intentado && faltantes.localidad}>
+        <select
+          className="campo"
+          value={localidad}
+          onChange={(e) => setLocalidad(e.target.value)}
         >
-          <input
-            className="campo"
-            inputMode="numeric"
-            value={numero}
-            onChange={(e) => setNumero(e.target.value)}
-            placeholder="Ej.: 1250"
-          />
-        </Campo>
-      </div>
+          <option value="">Elegí una…</option>
+          {LOCALIDADES.map((l) => (
+            <option key={l.sigla} value={l.nombre}>
+              {l.nombre}
+            </option>
+          ))}
+        </select>
+      </Campo>
 
+      {/* Calle y después altura, en ese orden: es como se dice una dirección
+          en voz alta, y como está impresa en la planilla de papel. */}
       <Campo etiqueta="Calle" falta={intentado && faltantes.calle}>
         <input
           className="campo"
           value={calle}
           onChange={(e) => setCalle(e.target.value)}
           placeholder="Ej.: San Juan"
+        />
+      </Campo>
+
+      <Campo
+        etiqueta="Altura"
+        ayuda="El número de la casa más cercana"
+        falta={intentado && faltantes.numero}
+      >
+        <input
+          className="campo"
+          inputMode="numeric"
+          value={numero}
+          onChange={(e) => setNumero(e.target.value)}
+          placeholder="Ej.: 1250"
         />
       </Campo>
 
@@ -224,10 +223,12 @@ export function FormularioVecino() {
         />
       </Campo>
 
+      {/* Opcional: sirve para poder avisarle cómo sigue, pero exigirlo dejaría
+          afuera a quien no tiene correo o no quiere darlo, que es justamente
+          la gente que hoy tiene que ir hasta la delegación. */}
       <Campo
-        etiqueta="Tu correo"
-        ayuda="Te mandamos un código para confirmar, y con eso podés seguir el reclamo"
-        falta={intentado && faltantes.contacto}
+        etiqueta="Tu correo (opcional)"
+        ayuda="Sólo si querés que te avisemos cómo sigue el reclamo"
       >
         <input
           className="campo"
@@ -251,7 +252,7 @@ export function FormularioVecino() {
       </button>
 
       <p className="text-center text-xs text-[var(--color-tinta-3)]">
-        Usamos tu correo sólo para confirmar el reclamo y avisarte cómo sigue.
+        Al enviarlo te damos un número de seguimiento para ver cómo sigue.
       </p>
     </form>
   );

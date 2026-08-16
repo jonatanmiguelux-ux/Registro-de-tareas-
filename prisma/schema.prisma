@@ -308,9 +308,7 @@ enum TipoFalla {
 }
 
 enum EstadoReclamoVecinal {
-  /// Cargado, pero el vecino todavía no confirmó su correo.
-  SIN_VERIFICAR
-  /// Verificado y a la espera de que alguien lo pase al sistema oficial.
+  /// Cargado y esperando que alguien lo pase al sistema oficial.
   RECIBIDO
   /// Ya cargado en el sistema oficial: tiene N.º de incidente.
   DERIVADO
@@ -334,18 +332,13 @@ model ReclamoVecinal {
   /// Foto de la luminaria. Se guarda igual que las de las planillas.
   fotoRuta String
 
-  /// Correo del vecino, verificado con un código antes de que el reclamo
-  /// entre. Es lo que frena que alguien cargue cien reclamos falsos.
-  contacto String
+  /// Correo del vecino, opcional: sirve para poder avisarle cómo sigue.
+  /// Exigirlo dejaría afuera a quien no tiene o no quiere darlo, que es
+  /// justamente la gente que hoy tiene que ir hasta la delegación.
+  contacto String?
 
-  estado EstadoReclamoVecinal @default(SIN_VERIFICAR)
+  estado EstadoReclamoVecinal @default(RECIBIDO)
 
-  /// Código de verificación, guardado como hash: si alguien llegara a leer la
-  /// base, no le sirve para confirmar reclamos ajenos.
-  verificacionHash    String?
-  verificacionExpira  DateTime?
-  verificacionIntentos Int      @default(0)
-  verificadoEn        DateTime?
 
   /// El número que devuelve el sistema oficial al cargarlo, y quién lo cargó.
   nroIncidente String?

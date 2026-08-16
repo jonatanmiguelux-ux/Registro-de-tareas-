@@ -42,16 +42,6 @@ export async function PATCH(
     return NextResponse.json({ error: "No existe el reclamo." }, { status: 404 });
   }
 
-  if (reclamo.estado === "SIN_VERIFICAR") {
-    return NextResponse.json(
-      {
-        error:
-          "El vecino todavía no confirmó su correo. Hasta entonces el reclamo no se puede derivar.",
-      },
-      { status: 409 },
-    );
-  }
-
   const { nroIncidente, descartar, notaInterna } = cuerpo.data;
 
   await prisma.reclamoVecinal.update({

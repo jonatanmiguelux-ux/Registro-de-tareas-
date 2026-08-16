@@ -3,7 +3,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatearMomento } from "@/lib/fechas";
 import { etiquetaDeFalla } from "@/lib/reclamos-vecinales";
-import { VerificarReclamo } from "@/components/VerificarReclamo";
 
 export const dynamic = "force-dynamic";
 
@@ -42,17 +41,9 @@ export default async function PaginaSeguimiento({
 
   const pasos = [
     {
-      titulo: "Reclamo cargado",
+      titulo: "Reclamo recibido",
       detalle: formatearMomento(reclamo.creadoEn),
       hecho: true,
-    },
-    {
-      titulo: "Correo confirmado",
-      detalle:
-        reclamo.estado === "SIN_VERIFICAR"
-          ? "Falta que ingreses el código"
-          : "Listo",
-      hecho: reclamo.estado !== "SIN_VERIFICAR",
     },
     {
       titulo: "Cargado en el sistema del municipio",
@@ -75,10 +66,6 @@ export default async function PaginaSeguimiento({
           . Guardalo para volver a esta página.
         </p>
       </div>
-
-      {reclamo.estado === "SIN_VERIFICAR" && (
-        <VerificarReclamo codigo={reclamo.codigo} />
-      )}
 
       {reclamo.estado === "DESCARTADO" && (
         <p className="rounded-lg border border-[var(--color-borde-fuerte)] bg-white px-4 py-3 text-sm">

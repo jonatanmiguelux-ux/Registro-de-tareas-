@@ -54,13 +54,6 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?falta GEMINI_API_KEY}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
       UPLOAD_DIR: /datos/uploads
-      # Correo, para verificar el contacto de quien carga un reclamo vecinal.
-      # Sin esto, los vecinos no reciben el código y ningún reclamo se confirma.
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_DESDE: ${SMTP_DESDE:-}
       # Acceso con cuenta de Google.
       AUTH_SECRET: ${AUTH_SECRET:?falta AUTH_SECRET}
       AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:?falta AUTH_GOOGLE_ID}
