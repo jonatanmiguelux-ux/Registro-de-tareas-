@@ -1,0 +1,76 @@
+# Despliegue en Render.
+#
+# Render lee este archivo y arma todo solo: la app, la base de datos y el
+# disco donde viven las fotos. No hay que crear los servicios a mano ni acordarse
+# de conectarlos entre sí.
+#
+# Las claves NO van acá —este archivo está en el repositorio—: las marcadas con
+# `sync: false` se cargan una sola vez desde el panel de Render.
+#
+# Ver docs/desplegar-en-render.md para el paso a paso.
+
+services:
+  - type: web
+    name: registro-de-tareas
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+
+    # La app aplica las migraciones al arrancar (ver docker/arrancar.sh), así
+    # que no hace falta un paso previo separado.
+
+    # Render considera viva la app cuando esta dirección responde. Tiene que
+    # ser una pública: cualquier otra redirige al login y el chequeo fallaría.
+    healthCheckPath: /alumbrado
+
+    # Las fotos originales de las planillas y de los reclamos. Sin esto se
+    # perderían en cada actualización, y son lo único que permite auditar un
+    # dato contra el papel.
+    disk:
+      name: fotos
+      mountPath: /datos
+      sizeGB: 5
+
+    envVars:
+      # Se conecta sola con la base de abajo.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: registro-tareas-db
+          property: connectionString
+
+      # Firma de las sesiones. Render genera un valor al azar la primera vez.
+      - key: AUTH_SECRET
+        generateValue: true
+
+      # La dirección pública con la que Auth.js arma la vuelta desde Google.
+      # Al principio es la que da Render (…onrender.com); cuando conectes el
+      # dominio propio, hay que cambiarla acá.
+      - key: AUTH_URL
+        sync: false
+      - key: AUTH_TRUST_HOST
+        value: "true"
+
+      # Credenciales de Google (console.cloud.google.com).
+      - key: AUTH_GOOGLE_ID
+        sync: false
+      - key: AUTH_GOOGLE_SECRET
+        sync: false
+
+      # Lectura de planillas con IA (aistudio.google.com/apikey).
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+
+      # Dominio propio de la app del vecino. Se completa cuando esté conectado;
+      # vacío, la parte del vecino queda en /alumbrado del mismo dominio.
+      - key: DOMINIO_VECINOS
+        sync: false
+
+databases:
+  - name: registro-tareas-db
+    databaseName: registro_tareas
+    user: registro
+    plan: basic-256mb
+    region: oregon

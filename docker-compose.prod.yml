@@ -22,33 +22,18 @@ services:
       timeout: 5s
       retries: 10
 
-  # Corre una vez, aplica las migraciones pendientes y carga el catálogo de
-  # materiales, y termina. La app no arranca hasta que esto haya salido bien:
-  # es preferible que la app no esté disponible a que atienda contra una base
-  # con la forma equivocada.
-  migraciones:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: migraciones
-    restart: "no"
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://registro:${POSTGRES_PASSWORD}@db:5432/registro_tareas?schema=public
-
+  # La propia imagen aplica las migraciones y carga el catálogo antes de
+  # levantar el servidor. Si una migración falla, el contenedor no arranca: es
+  # preferible que la app no esté disponible a que atienda contra una base con
+  # la forma equivocada.
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
-      migraciones:
-        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://registro:${POSTGRES_PASSWORD}@db:5432/registro_tareas?schema=public
       GEMINI_API_KEY: ${GEMINI_API_KEY:?falta GEMINI_API_KEY}

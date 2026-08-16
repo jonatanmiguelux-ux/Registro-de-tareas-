@@ -266,6 +266,12 @@ no deja rastro y puede perder datos.
 
 ## Ponerlo en producción
 
+**El camino más simple es Render**, sin consola de servidor: se conecta
+GitHub y el archivo `render.yaml` arma la app, la base y el disco de fotos.
+El paso a paso está en [docs/desplegar-en-render.md](docs/desplegar-en-render.md).
+
+Lo que sigue es la alternativa con servidor propio.
+
 Un VPS chico alcanza sobrado. Todo va con Docker Compose: la app, Postgres,
 Caddy —que saca y renueva el certificado HTTPS solo— y las copias de la base.
 
@@ -409,6 +415,8 @@ src/lib/localidades.ts      Siglas de localidad → nombre completo
 src/lib/cuadrillas.ts       Zonas: lógica de derivación, sin base de datos
 src/lib/cuadrillas-db.ts    El reparto guardado, con siembra inicial
 docs/pagina-vecinos.md      Criterio de la página pública: qué decir y cómo se ve
+docs/desplegar-en-render.md Paso a paso para ponerlo en internet
+render.yaml                 Despliegue en Render, sin consola
 src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx
 src/lib/materiales.ts       Catálogo de columnas, con alta automática

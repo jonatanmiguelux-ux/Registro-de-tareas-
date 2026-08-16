@@ -1,12 +1,14 @@
 # Imagen de producción de Registro de tareas.
 #
-# Cuatro etapas. La que sirve la app no lleva ni el compilador ni el código
-# fuente ni la CLI de Prisma: las migraciones corren en un contenedor aparte,
-# de un solo uso (ver el servicio `migraciones` en docker-compose.prod.yml).
+# Una sola imagen que sabe migrar la base, cargar el catálogo de materiales y
+# servir la app. Se hace así porque los servicios de despliegue que no piden
+# consola —Render, Railway y parecidos— corren **un solo contenedor**: no hay
+# lugar donde poner un paso previo separado.
 #
-# Se hace así porque la CLI de Prisma arrastra un árbol de dependencias propio
-# que no se puede recortar a mano sin que se rompa; darle su propio contenedor
-# sale más barato que cargarlo en la imagen que queda corriendo siempre.
+# El costo es que la CLI de Prisma viaja en la imagen. Se instala aparte, con
+# `npm install -g`, y no copiando carpetas sueltas de node_modules: esa CLI
+# arrastra su propio árbol de dependencias, y recortarlo a mano se rompe de
+# formas que sólo aparecen al arrancar en producción.
 
 # ---------------------------------------------------------------- dependencias
 FROM node:22-alpine AS dependencias
@@ -28,12 +30,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# ------------------------------------------------------------------ migraciones
-# Contenedor de un solo uso: aplica las migraciones y carga el catálogo de
-# materiales. Tiene el node_modules entero, así que la CLI de Prisma y tsx
-# funcionan sin recortes.
-FROM compilacion AS migraciones
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run db:seed"]
+# El seed es TypeScript y en la imagen final no hay tsx: se transpila acá,
+# que es donde todavía están las herramientas de compilación.
+RUN npx tsc prisma/seed.ts \
+      --outDir ./prisma-compilado \
+      --module commonjs --target es2022 --moduleResolution node \
+      --esModuleInterop --skipLibCheck
 
 # ---------------------------------------------------------------------- servir
 FROM node:22-alpine AS runner
@@ -45,9 +47,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Las fotos originales van a un volumen, no al sistema de archivos de la
-# imagen: si no, se perderían en cada actualización.
+# Las fotos originales van a un volumen o disco, no al sistema de archivos de
+# la imagen: si no, se perderían en cada actualización.
 ENV UPLOAD_DIR=/datos/uploads
+
+# La CLI, para poder aplicar migraciones al arrancar. La versión se fija a
+# propósito: que coincida con la del proyecto evita sorpresas el día que
+# Prisma saque una versión nueva.
+RUN npm install -g prisma@6.19.3 && npm cache clean --force
 
 # Usuario sin privilegios: si alguien logra ejecutar algo dentro del
 # contenedor, que no sea root.
@@ -57,9 +64,16 @@ COPY --from=compilacion /app/public ./public
 COPY --from=compilacion --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=compilacion --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# El esquema y las migraciones, para que `prisma migrate deploy` sepa qué
+# aplicar; y el seed ya transpilado.
+COPY --from=compilacion /app/prisma ./prisma
+COPY --from=compilacion /app/prisma-compilado/seed.js ./prisma/seed.js
+
+COPY --chmod=755 docker/arrancar.sh ./arrancar.sh
+
 RUN mkdir -p /datos/uploads && chown -R nextjs:nodejs /datos
 
 USER nextjs
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["./arrancar.sh"]
