@@ -4,34 +4,62 @@ import assert from "node:assert/strict";
 import { esDeNoche } from "@/lib/nitidez";
 
 /**
- * `analizarNitidez` necesita un navegador —usa canvas— así que se prueba a
- * mano con fotos reales. Lo que sí se puede fijar acá es la regla horaria,
- * que decide cuándo aparece el recordatorio del flash.
+ * `analizarNitidez` necesita un navegador —usa canvas— así que el umbral se
+ * validó a mano contra fotos reales. Lo que sí se prueba acá es cuándo aparece
+ * el recordatorio del flash, que ahora depende del sol y no de una hora fija.
+ *
+ * Las horas de referencia son las de La Costa: en enero el sol se oculta cerca
+ * de las 20:07 y en junio cerca de las 17:38.
  */
 
-test("es de noche a partir de las siete de la tarde", () => {
-  const a = (hora: number) => new Date(2026, 7, 16, hora, 0, 0);
+/** Un momento del día, en la zona horaria de la máquina que corre esto. */
+const en = (mes: number, dia: number, hora: number, minuto = 0) =>
+  new Date(2026, mes - 1, dia, hora, minuto);
 
-  assert.equal(esDeNoche(a(19)), true, "las 19 ya cuentan como noche");
-  assert.equal(esDeNoche(a(23)), true);
-  assert.equal(esDeNoche(a(3)), true, "la madrugada también");
-  assert.equal(esDeNoche(a(6)), true, "las 6 todavía está oscuro");
+test("en verano, a las siete de la tarde todavía hay luz", () => {
+  // La regla vieja de "19 a 7" mostraba el aviso acá, con el sol arriba.
+  assert.equal(esDeNoche(en(1, 15, 19, 0)), false);
+  assert.equal(esDeNoche(en(1, 15, 19, 55)), false, "faltan minutos para que se oculte");
 });
 
-test("no es de noche durante la jornada", () => {
-  const a = (hora: number) => new Date(2026, 7, 16, hora, 0, 0);
-
-  assert.equal(esDeNoche(a(7)), false, "a las 7 ya hay luz");
-  assert.equal(esDeNoche(a(12)), false);
-  assert.equal(esDeNoche(a(18)), false, "las 18 son el último tramo con luz");
+test("en verano oscurece pasadas las ocho", () => {
+  assert.equal(esDeNoche(en(1, 15, 20, 30)), true);
+  assert.equal(esDeNoche(en(1, 15, 23, 0)), true);
 });
 
-test("el aviso cubre la franja en que se reportan las luces apagadas", () => {
-  // Una luminaria que no enciende sólo se nota de noche: si el aviso no
-  // cubriera esa franja, no serviría para nada.
-  let conAviso = 0;
-  for (let hora = 0; hora < 24; hora++) {
-    if (esDeNoche(new Date(2026, 7, 16, hora))) conAviso++;
+test("en invierno ya está oscuro a las seis de la tarde", () => {
+  // Esto es lo que la regla fija se perdía: una hora larga de oscuridad real
+  // sin recordarle el flash a nadie, justo cuando más se reclama.
+  assert.equal(esDeNoche(en(6, 21, 18, 0)), true);
+  assert.equal(esDeNoche(en(6, 21, 18, 30)), true);
+});
+
+test("en invierno todavía es de noche a las siete y media de la mañana", () => {
+  // El sol sale cerca de las 7:58: la regla fija cortaba el aviso a las 7.
+  assert.equal(esDeNoche(en(6, 21, 7, 30)), true);
+  assert.equal(esDeNoche(en(6, 21, 8, 30)), false, "a esa hora ya salió");
+});
+
+test("al mediodía nunca es de noche, en ninguna estación", () => {
+  for (const mes of [1, 3, 6, 9, 12]) {
+    assert.equal(esDeNoche(en(mes, 15, 13, 0)), false, `falló en el mes ${mes}`);
   }
-  assert.equal(conAviso, 12, "doce horas de aviso, de 19 a 7");
+});
+
+test("la noche dura más en invierno que en verano", () => {
+  // Comprobación de que el cálculo sigue las estaciones y no devuelve
+  // cualquier cosa: en el hemisferio sur, junio tiene noches más largas.
+  const horasDeNoche = (mes: number, dia: number) => {
+    let cuenta = 0;
+    for (let h = 0; h < 24; h++) if (esDeNoche(en(mes, dia, h, 30))) cuenta++;
+    return cuenta;
+  };
+
+  const verano = horasDeNoche(1, 15);
+  const invierno = horasDeNoche(6, 21);
+
+  assert.ok(
+    invierno > verano,
+    `invierno ${invierno} h deberían superar a verano ${verano} h`,
+  );
 });

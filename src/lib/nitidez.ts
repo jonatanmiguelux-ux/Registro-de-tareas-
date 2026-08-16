@@ -1,3 +1,5 @@
+import * as SunCalc from "suncalc";
+
 /**
  * Mide si una foto salió movida, sin IA y sin mandarla a ningún lado.
  *
@@ -127,13 +129,46 @@ function cargar(archivo: File): Promise<Mapa | null> {
 }
 
 /**
- * ¿Es de noche para quien está mirando la pantalla?
+ * Punto medio del partido de La Costa, para calcular el sol.
  *
- * Se usa la hora del propio celular, no la de un servicio de horarios: no hace
- * falta precisión de minutos y no vale la pena pedir la ubicación ni depender
- * de internet para decidir si mostrar un renglón de ayuda.
+ * Todas las localidades están sobre la misma franja de costa: entre San
+ * Clemente y Nueva Atlantis el sol se oculta con menos de dos minutos de
+ * diferencia. No vale la pena pedirle la ubicación al vecino —un permiso más,
+ * y una razón más para abandonar— por una precisión que nadie va a notar.
+ */
+const LA_COSTA = { latitud: -36.54, longitud: -56.69 };
+
+/**
+ * ¿Está oscuro para quien está mirando la pantalla?
+ *
+ * Se calcula con la salida y la puesta del sol del día, en vez de una hora
+ * fija. En la costa el atardecer va de las 17:38 en junio a las 20:07 en
+ * enero: una regla fija tipo "de 19 a 7" se equivoca medio año, y del lado
+ * peor — en invierno dejaba sin aviso casi dos horas y media de oscuridad
+ * real, justo cuando las noches son largas y más se reclama por luces
+ * apagadas.
+ *
+ * El cálculo es local y no consulta ningún servicio: sale de la fecha y las
+ * coordenadas, así que funciona sin señal y no agrega ninguna espera.
  */
 export function esDeNoche(fecha = new Date()): boolean {
-  const hora = fecha.getHours();
-  return hora >= 19 || hora < 7;
+  const { sunrise, sunset } = SunCalc.getTimes(
+    fecha,
+    LA_COSTA.latitud,
+    LA_COSTA.longitud,
+  );
+
+  // En latitudes altas puede no haber salida o puesta ese día; acá no pasa,
+  // pero si el cálculo no diera un valor usable es preferible no mostrar el
+  // aviso a mostrarlo a destiempo.
+  if (
+    !sunrise ||
+    !sunset ||
+    Number.isNaN(sunrise.getTime()) ||
+    Number.isNaN(sunset.getTime())
+  ) {
+    return false;
+  }
+
+  return fecha < sunrise || fecha >= sunset;
 }
