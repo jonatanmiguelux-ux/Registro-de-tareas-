@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { encolar, hayCola } from "@/lib/cola";
+import { comprimirImagen, describirAhorro, PLANILLA } from "@/lib/comprimir";
 
 export function CargarPlanilla() {
   const router = useRouter();
@@ -14,21 +15,36 @@ export function CargarPlanilla() {
   const [analizando, setAnalizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardada, setGuardada] = useState(false);
+  const [ahorro, setAhorro] = useState<string | null>(null);
 
-  function elegir(lista: FileList | null) {
+  async function elegir(lista: FileList | null) {
     const elegido = lista?.[0];
     if (!elegido) return;
     setError(null);
     setGuardada(false);
+    setAhorro(null);
+
+    // Se guarda el original de entrada: si la persona aprieta Analizar antes
+    // de que termine de achicarse, sube el grande y no se pierde nada.
     setArchivo(elegido);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
       return URL.createObjectURL(elegido);
     });
+
+    // Achicarla acá y no en el servidor: lo que se ahorra es la subida, que
+    // es la parte lenta cuando la cuadrilla está en la calle con una raya de
+    // señal. Se cuida la resolución para que la IA siga leyendo la letra.
+    const achicado = await comprimirImagen(elegido, PLANILLA);
+    if (achicado !== elegido) {
+      setArchivo(achicado);
+      setAhorro(describirAhorro(elegido.size, achicado.size));
+    }
   }
 
   function limpiar() {
     setArchivo(null);
+    setAhorro(null);
     setVistaPrevia((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior);
       return null;
@@ -162,6 +178,9 @@ export function CargarPlanilla() {
               {archivo?.name}
               <span className="ml-2 font-normal text-[var(--color-tinta-3)]">
                 {archivo ? `${(archivo.size / 1024 / 1024).toFixed(1)} MB` : ""}
+                {/* Que se vea que se achicó explica por qué sube rápido, y
+                    tranquiliza a quien recuerda haber sacado una foto grande. */}
+                {ahorro && ` · achicada de ${ahorro.split(" → ")[0]}`}
               </span>
             </span>
             <button

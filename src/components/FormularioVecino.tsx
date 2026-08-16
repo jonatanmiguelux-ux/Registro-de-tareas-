@@ -6,6 +6,7 @@ import Link from "next/link";
 import { LOCALIDADES } from "@/lib/localidades";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
 import { analizarNitidez, esDeNoche } from "@/lib/nitidez";
+import { comprimirImagen, LUMINARIA } from "@/lib/comprimir";
 
 /**
  * Formulario del vecino.
@@ -51,6 +52,8 @@ export function FormularioVecino() {
   async function elegirFoto(lista: FileList | null) {
     const elegida = lista?.[0];
     if (!elegida) return;
+    // La original queda puesta de entrada: si toca Enviar antes de que
+    // termine de achicarse, sube la grande y no se pierde el reclamo.
     setFoto(elegida);
     setMovida(false);
     setVistaPrevia((anterior) => {
@@ -58,8 +61,17 @@ export function FormularioVecino() {
       return URL.createObjectURL(elegida);
     });
 
+    // La borrosidad se mide sobre la **original**. Achicar una foto movida la
+    // hace parecer más nítida —al juntar píxeles se disimula el arrastre—, y
+    // entonces dejaríamos pasar fotos que no se entienden.
     const nitidez = await analizarNitidez(elegida);
     if (nitidez?.borrosa) setMovida(true);
+
+    // Recién ahora se achica, para mandar. El vecino está parado en la vereda
+    // de noche con una raya de señal: subir 8 MB puede tardar minutos y
+    // cortarse. Nadie va a leer letra en esta foto, sólo ver qué columna es.
+    const achicada = await comprimirImagen(elegida, LUMINARIA);
+    if (achicada !== elegida) setFoto(achicada);
   }
 
   async function enviar(e: React.FormEvent) {
