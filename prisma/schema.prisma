@@ -363,3 +363,28 @@ model ReclamoVecinal {
   @@index([localidad, calle])
   @@map("reclamos_vecinales")
 }
+
+/// Una cuadrilla y las localidades que atiende.
+///
+/// Vive en la base y no en el código porque el reparto de zonas cambia: se
+/// suma un equipo, se reorganiza la costa, alguien cubre una localidad más
+/// por un tiempo. Que eso exija tocar el código y volver a desplegar sería
+/// convertir una decisión de todos los días en un trámite técnico.
+///
+/// El número es el mismo que el Móvil N.º de la planilla de papel: es lo que
+/// identifica al equipo que sale, y lo que permite cruzar un reclamo de
+/// vecino con el trabajo que después aparece en la planilla.
+model Cuadrilla {
+  id     String @id @default(cuid())
+  numero Int    @unique
+
+  /// Nombres completos de localidad, tal como los guarda el resto del
+  /// sistema. Una localidad no puede estar en dos cuadrillas: lo garantiza
+  /// el endpoint, que la saca de la anterior al asignarla.
+  localidades String[]
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("cuadrillas")
+}

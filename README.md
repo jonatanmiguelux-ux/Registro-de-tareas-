@@ -119,8 +119,17 @@ Una localidad que no esté en ninguna zona —un lugar fuera del partido, o uno
 nuevo sin repartir— **no se deriva a nadie**: queda aparte y a la vista en la
 pantalla de Vecinos. Adivinar mandaría un equipo a un lugar que no le toca.
 
-El reparto se cambia en `src/lib/cuadrillas.ts`, y se ve dentro de la app en
-Vecinos → "Zonas de trabajo".
+**El reparto vive en la base y se administra desde la app**, en Cuadrillas y
+zonas (sólo administradores). Cambiarlo no exige tocar el código ni volver a
+desplegar: el reparto de equipos es una decisión de gestión, no técnica.
+
+La primera vez que se consulta, si no hay ninguna cuadrilla cargada, se
+siembra el reparto acordado con el municipio. Así el sistema arranca derivando
+en vez de dejar todo sin asignar hasta que alguien entre a configurarlo.
+
+**Las zonas no se muestran en la página pública**: al vecino no le sirve saber
+qué móvil lo atiende, y publicarlo obligaría a mantener la página al día con
+cada reorganización.
 
 Esta parte está aislada del resto: tabla propia, sin tocar planillas, stock ni
 reclamos de cuadrilla. Es lo único de la app abierto a internet, así que todo
@@ -147,6 +156,7 @@ de verificación se puede reponer.
 | **Tablero** | Totales, pendientes, resumen diario y consumo por material |
 | **Stock** | Stock inicial, entradas, salidas y stock actual |
 | **Vecinos** | Los reclamos que cargó la gente, para pasarlos al sistema oficial |
+| **Cuadrillas y zonas** | Qué localidades cubre cada equipo (administradores) |
 | **Alumbrado** | Pública: explica el servicio al vecino |
 | **Reclamar** | Pública, sin cuenta: donde el vecino carga su reclamo |
 
@@ -396,7 +406,8 @@ src/lib/ocr.ts              Lectura de la planilla con Gemini
 src/lib/schema.ts           Forma de la respuesta de la IA (zod)
 src/lib/gemini-schema.ts    Traducción de ese zod al esquema que acepta Gemini
 src/lib/localidades.ts      Siglas de localidad → nombre completo
-src/lib/cuadrillas.ts       Zonas: qué cuadrilla atiende cada localidad
+src/lib/cuadrillas.ts       Zonas: lógica de derivación, sin base de datos
+src/lib/cuadrillas-db.ts    El reparto guardado, con siembra inicial
 docs/pagina-vecinos.md      Criterio de la página pública: qué decir y cómo se ve
 src/lib/diagnosticos.ts     Siglas C/C, F/C, F/N → diagnóstico
 src/lib/excel.ts            Armado del .xlsx

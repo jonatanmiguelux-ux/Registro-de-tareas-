@@ -4,6 +4,7 @@ import { guardarImagen } from "@/lib/almacenamiento";
 import { verificarImagen } from "@/lib/imagenes";
 import { normalizarLocalidad } from "@/lib/localidades";
 import { cuadrillaDeLocalidad } from "@/lib/cuadrillas";
+import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import {
   correoValido,
   generarCodigoSeguimiento,
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
       localidad: localidadNormalizada,
       // La zona decide sola a qué cuadrilla le toca: nadie tiene que mirar un
       // mapa ni acordarse de quién cubre qué.
-      cuadrilla: cuadrillaDeLocalidad(localidadNormalizada),
+      cuadrilla: cuadrillaDeLocalidad(localidadNormalizada, await listarCuadrillas()),
       calle,
       numero,
       observacion,

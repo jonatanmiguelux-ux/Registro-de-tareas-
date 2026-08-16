@@ -2,7 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { requerirUsuario } from "@/lib/sesion";
 import { formatearMomento } from "@/lib/fechas";
 import { etiquetaDeFalla } from "@/lib/reclamos-vecinales";
-import { CUADRILLAS } from "@/lib/cuadrillas";
+import { describirZona } from "@/lib/cuadrillas";
+import { listarCuadrillas } from "@/lib/cuadrillas-db";
+import Link from "next/link";
 import { AccionesReclamoVecinal } from "@/components/AccionesReclamoVecinal";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +31,7 @@ type Fila = {
 export default async function PaginaVecinos() {
   await requerirUsuario();
 
-  const [pendientes, resueltos] = await Promise.all([
+  const [pendientes, resueltos, cuadrillas] = await Promise.all([
     prisma.reclamoVecinal.findMany({
       where: { estado: "RECIBIDO" },
       orderBy: { creadoEn: "asc" },
@@ -39,10 +41,12 @@ export default async function PaginaVecinos() {
       orderBy: { creadoEn: "desc" },
       take: 50,
     }),
+    listarCuadrillas(),
   ]);
 
-  const porCuadrilla = CUADRILLAS.map((c) => ({
+  const porCuadrilla = cuadrillas.map((c) => ({
     ...c,
+    zona: describirZona(c.localidades),
     reclamos: pendientes.filter((r) => r.cuadrilla === c.numero),
   }));
 
@@ -55,11 +59,17 @@ export default async function PaginaVecinos() {
         <h1 className="titulo-pagina">Reclamos de vecinos</h1>
         <p className="bajada mt-1.5">
           Lo que cargó la gente desde la calle, repartido por zona. Pasalo al
-          sistema oficial y anotá acá el N.º de incidente que te devuelve.
+          sistema oficial y anotá acá el N.º de incidente que te devuelve.{" "}
+          <Link
+            href="/cuadrillas"
+            className="font-medium text-[var(--color-acento)] hover:underline"
+          >
+            Ver o cambiar el reparto
+          </Link>
+          .
         </p>
       </div>
 
-      <ZonasDeTrabajo />
 
       {pendientes.length === 0 ? (
         <p className="tarjeta py-14 text-center text-sm text-[var(--color-tinta-3)]">
@@ -166,64 +176,6 @@ export default async function PaginaVecinos() {
         </section>
       )}
     </div>
-  );
-}
-
-/**
- * El reparto de zonas, a la vista.
- *
- * Está acá y no sólo en el código porque es información que necesita quien
- * usa la app, no quien la programa: al ver un reclamo mal derivado, lo primero
- * que hay que poder consultar es qué zona cubre cada cuadrilla.
- */
-function ZonasDeTrabajo() {
-  return (
-    <details className="tarjeta group overflow-hidden">
-      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-slate-50/70">
-        <span className="text-sm font-semibold">Zonas de trabajo</span>
-        <span className="text-sm text-[var(--color-tinta-3)]">
-          Qué localidades cubre cada cuadrilla
-        </span>
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="ml-auto shrink-0 text-[var(--color-tinta-3)] transition group-open:rotate-180"
-          aria-hidden="true"
-        >
-          <path d="M6 9.5 12 15l6-5.5" />
-        </svg>
-      </summary>
-
-      <div className="grid gap-px border-t border-[var(--color-borde)] bg-[var(--color-borde)] sm:grid-cols-2">
-        {CUADRILLAS.map((c) => (
-          <div key={c.numero} className="bg-white p-4">
-            <p className="text-sm font-semibold">
-              Cuadrilla {c.numero}
-              <span className="ml-2 font-normal text-[var(--color-tinta-3)]">
-                Móvil {c.numero}
-              </span>
-            </p>
-            <p className="mt-0.5 text-xs text-[var(--color-tinta-2)]">{c.zona}</p>
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {c.localidades.map((l) => (
-                <li
-                  key={l}
-                  className="rounded-full bg-[var(--color-fondo)] px-2.5 py-1 text-xs"
-                >
-                  {l}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </details>
   );
 }
 

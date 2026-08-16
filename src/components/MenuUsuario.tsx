@@ -90,13 +90,22 @@ export function MenuUsuario() {
           </div>
 
           {usuario.rol === "ADMINISTRADOR" && (
-            <Link
-              href="/cuentas"
-              className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
-              onClick={() => setAbierto(false)}
-            >
-              Cuentas
-            </Link>
+            <>
+              <Link
+                href="/cuadrillas"
+                className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
+                onClick={() => setAbierto(false)}
+              >
+                Cuadrillas y zonas
+              </Link>
+              <Link
+                href="/cuentas"
+                className="block px-4 py-2.5 text-sm transition hover:bg-slate-50"
+                onClick={() => setAbierto(false)}
+              >
+                Cuentas
+              </Link>
+            </>
           )}
 
           {/* Formulario y no fetch: cerrar sesión tiene que limpiar la cookie

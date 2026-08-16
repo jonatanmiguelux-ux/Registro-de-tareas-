@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CUADRILLAS } from "@/lib/cuadrillas";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
 
 /**
@@ -84,33 +83,6 @@ export default function PaginaAlumbrado() {
             </li>
           ))}
         </ol>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold">Las cuadrillas y sus zonas</h2>
-        <p className="mt-1 text-sm text-[var(--color-tinta-2)]">
-          Tu reclamo va directo al equipo que trabaja en tu localidad.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {CUADRILLAS.map((c) => (
-            <div key={c.numero} className="tarjeta p-4">
-              <p className="text-sm font-semibold">Cuadrilla {c.numero}</p>
-              <p className="mt-0.5 text-xs text-[var(--color-tinta-3)]">
-                {c.zona}
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {c.localidades.map((l) => (
-                  <li
-                    key={l}
-                    className="rounded-full bg-[var(--color-fondo)] px-2.5 py-1 text-xs"
-                  >
-                    {l}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
       </section>
 
       <section>

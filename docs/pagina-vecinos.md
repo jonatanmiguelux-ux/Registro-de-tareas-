@@ -81,15 +81,10 @@ cuenta ni contraseña. Con ese número vuelve cuando quiera a ver el estado.
 
 **A dónde va**: a la cuadrilla de su zona, automáticamente.
 
-| Cuadrilla | Zona |
-|---|---|
-| 1 | Nueva Atlantis y Mar de Ajó |
-| 2 | De Costa Azul a Mar del Tuyú |
-| 3 | Santa Teresita y Costa Chica |
-| 4 | De Las Toninas a San Clemente |
-
-Mostrar las zonas cumple una función concreta: le confirma al vecino que su
-localidad está cubierta. Si no ve la suya en la lista, algo hay que revisar.
+**El reparto de cuadrillas NO se muestra en la página.** Es información de
+gestión interna: al vecino no le sirve saber que su reclamo lo atiende el
+Móvil 2, y publicarlo obliga a mantener la página al día con cada
+reorganización. El reparto se administra en la app del municipio.
 
 ## 5. Estructura de la página
 
@@ -104,11 +99,10 @@ En este orden. Cada sección justifica su lugar:
 3. **Qué podés reportar** — las tres fallas, en tarjetas.
 4. **Cómo funciona** — los cuatro pasos del circuito, numerados. Acá la
    numeración sí corresponde: es una secuencia real en el tiempo.
-5. **Las cuadrillas y sus zonas** — la confirmación de cobertura.
-6. **Preguntas frecuentes** — arrancando por la de los plazos.
-7. **Cierre con el botón otra vez.** Quien llegó hasta abajo leyendo, ya se
+5. **Preguntas frecuentes** — arrancando por la de los plazos.
+6. **Cierre con el botón otra vez.** Quien llegó hasta abajo leyendo, ya se
    convenció; no hay que hacerlo subir de nuevo.
-8. **Pie** — quién es el municipio, y el enlace al formulario.
+7. **Pie** — quién es el municipio, y el enlace al formulario.
 
 El botón aparece **tres veces** (arriba, al cierre, en el pie). No es
 repetición por descuido: en un celular, la distancia entre convencerse y poder
@@ -160,7 +154,7 @@ se ve peor que no tenerlo.
 **Se diseña para 360 px de ancho y se agranda desde ahí**, no al revés.
 
 - Todo en **una sola columna** hasta 640 px. Las tarjetas de fallas y de
-  cuadrillas pasan a dos o tres columnas recién en pantallas grandes.
+  pasos pasan a más columnas recién en pantallas grandes.
 - **Ningún elemento tocable mide menos de 44 px de alto.** Es lo que mide un
   dedo. Vale para el botón, para los enlaces del pie, para todo.
 - El botón principal ocupa **todo el ancho** en celular.
@@ -206,14 +200,12 @@ No es un extra: mucha de la gente que reporta una luz quemada es gente grande.
 src/app/(vecino)/alumbrado/page.tsx    La página
 src/app/(vecino)/layout.tsx            Encabezado y pie
 src/app/globals.css                    Colores, tipografía, botones
-src/lib/cuadrillas.ts                  Las zonas (se leen solas de acá)
 src/lib/reclamos-vecinales.ts          Los tres tipos de falla
 ```
 
-Las zonas y los tipos de falla **no están escritos a mano en la página**: se
-leen de los mismos archivos que usa la app. Si mañana cambia el reparto de
-cuadrillas, la página se actualiza sola y no queda diciendo algo que ya no es
-cierto.
+Los tres tipos de falla **no están escritos a mano en la página**: se leen de
+`reclamos-vecinales.ts`, el mismo archivo que usa el formulario. Si se agrega
+un cuarto tipo, la página no queda diciendo que hay tres.
 
 Para verla mientras trabajás:
 
@@ -230,7 +222,6 @@ la portada de `vecinos-lacosta.com.ar`.
 
 - [ ] Se lee entera en un celular sin hacer zoom ni desplazar en horizontal
 - [ ] El botón se ve sin desplazar la pantalla al entrar
-- [ ] Las once localidades del partido aparecen en alguna zona
 - [ ] Los tres tipos de falla coinciden con los del formulario
 - [ ] Ninguna frase promete un plazo
 - [ ] El formulario se puede completar y enviar de punta a punta
