@@ -26,13 +26,40 @@ export const LOCALIDADES = Object.entries(POR_SIGLA).map(([sigla, nombre]) => ({
   nombre,
 }));
 
-const NOMBRES = new Set(Object.values(POR_SIGLA).map((n) => n.toLowerCase()));
+/**
+ * Deja el texto comparable: sin mayúsculas, sin tildes y con un solo espacio.
+ *
+ * Las tildes importan más de lo que parece. Tres de las once localidades
+ * llevan una —Mar de Ajó, Mar del Tuyú, Nueva Atlantis no— y quien escribe
+ * casi nunca la pone: ni la IA que lee la letra manuscrita, ni alguien
+ * tecleando rápido en un celular. Sin esto, "Mar de Ajo" no se reconocía como
+ * Mar de Ajó, y el reclamo quedaba **sin cuadrilla asignada**: nadie lo
+ * recibía y nadie se enteraba de que no lo había recibido.
+ */
+function comparable(texto: string): string {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    // El rango va escrito con códigos y no con los caracteres: son signos
+    // que no se ven, y en el código fuente eso es una trampa para el que
+    // venga después.
+    .replace(/[\u0300-\u036f]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Índice de nombre comparable -> nombre canónico. */
+const POR_NOMBRE = new Map(
+  Object.values(POR_SIGLA).map((n) => [comparable(n), n]),
+);
 
 /**
  * Convierte lo que se leyó en la columna "Localidad" al nombre completo.
  *
  * Acepta la sigla en cualquier combinación de mayúsculas y con o sin puntos
- * ("MdA", "mda", "M.d.A."), porque en el papel se escribe de las tres formas.
+ * ("MdA", "mda", "M.d.A."), porque en el papel se escribe de las tres formas,
+ * y el nombre completo con o sin tildes.
+ *
  * Si no reconoce el valor lo devuelve tal cual: es preferible conservar lo que
  * decía el papel a descartarlo por no estar en la lista.
  */
@@ -40,13 +67,12 @@ export function normalizarLocalidad(valor: string | null): string | null {
   const texto = valor?.trim();
   if (!texto) return null;
 
-  // Ya viene con el nombre completo: se respeta la forma canónica.
-  const comoNombre = texto.toLowerCase().replace(/\s+/g, " ");
-  if (NOMBRES.has(comoNombre)) {
-    return LOCALIDADES.find((l) => l.nombre.toLowerCase() === comoNombre)!.nombre;
-  }
+  // Ya viene con el nombre completo: se devuelve la forma canónica, con sus
+  // tildes, para que en la base haya una sola escritura de cada localidad.
+  const porNombre = POR_NOMBRE.get(comparable(texto));
+  if (porNombre) return porNombre;
 
-  const sigla = texto.toLowerCase().replace(/[\s.]/g, "");
+  const sigla = comparable(texto).replace(/[\s.]/g, "");
   return POR_SIGLA[sigla] ?? texto;
 }
 

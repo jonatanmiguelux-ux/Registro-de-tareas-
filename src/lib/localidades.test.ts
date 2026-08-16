@@ -5,6 +5,7 @@ import {
   agruparPorLocalidad,
   compararLocalidades,
   normalizarLocalidad,
+  LOCALIDADES,
   SIN_LOCALIDAD,
 } from "@/lib/localidades";
 
@@ -108,4 +109,38 @@ test("comparar ordena una lista suelta igual que el agrupador", () => {
     "Pinamar",
     null,
   ]);
+});
+
+/**
+ * Las tildes. Tres localidades las llevan y casi nadie las escribe: ni la IA
+ * leyendo letra manuscrita ni alguien tecleando en un celular. Sin esto el
+ * reclamo quedaba sin cuadrilla, y nadie se enteraba.
+ */
+test("reconoce los nombres sin tilde", () => {
+  assert.equal(normalizarLocalidad("Mar de Ajo"), "Mar de Ajó");
+  assert.equal(normalizarLocalidad("mar de ajo"), "Mar de Ajó");
+  assert.equal(normalizarLocalidad("MAR DE AJO"), "Mar de Ajó");
+  assert.equal(normalizarLocalidad("Mar del Tuyu"), "Mar del Tuyú");
+  assert.equal(normalizarLocalidad("mar del tuyu"), "Mar del Tuyú");
+});
+
+test("sigue reconociendo los nombres con tilde", () => {
+  assert.equal(normalizarLocalidad("Mar de Ajó"), "Mar de Ajó");
+  assert.equal(normalizarLocalidad("MAR DE AJÓ"), "Mar de Ajó");
+  assert.equal(normalizarLocalidad("Mar del Tuyú"), "Mar del Tuyú");
+});
+
+test("las siglas siguen andando en todas sus formas", () => {
+  for (const forma of ["MdA", "mda", "MDA", "M.d.A.", " mda "]) {
+    assert.equal(normalizarLocalidad(forma), "Mar de Ajó", forma);
+  }
+});
+
+test("todas las localidades se reconocen sin tilde y por sigla", () => {
+  for (const { sigla, nombre } of LOCALIDADES) {
+    const sinTilde = nombre.normalize("NFD").replace(/[\u0300-\u036f]/gu, "");
+    assert.equal(normalizarLocalidad(sinTilde), nombre, `sin tilde: ${nombre}`);
+    assert.equal(normalizarLocalidad(sigla), nombre, `sigla: ${sigla}`);
+    assert.equal(normalizarLocalidad(nombre), nombre, `canonico: ${nombre}`);
+  }
 });
