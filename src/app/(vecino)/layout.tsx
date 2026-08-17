@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MenuVecino } from "@/components/MenuVecino";
+import { NOMBRE_MUNICIPIO } from "@/config/municipio";
 
 /**
  * La app del vecino.
@@ -49,7 +50,7 @@ export default function LayoutVecino({
 
       <footer className="border-t border-[var(--color-borde)] bg-white">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-[var(--color-tinta-3)]">
-          <span>Municipalidad de La Costa · Alumbrado público</span>
+          <span>{NOMBRE_MUNICIPIO} · Alumbrado público</span>
           <Link href="/reclamar" className="font-medium text-[var(--color-acento)]">
             Reportar una luminaria
           </Link>

@@ -1,4 +1,5 @@
 import { normalizarLocalidad, LOCALIDADES } from "@/lib/localidades";
+import { REPARTO_INICIAL_CUADRILLAS } from "@/config/municipio";
 
 /**
  * Zonas de trabajo: qué cuadrilla atiende cada localidad.
@@ -16,23 +17,9 @@ export type Cuadrilla = {
 
 /**
  * Reparto con el que arranca el sistema, hasta que alguien lo cambie desde la
- * app. Es el que acordó el municipio.
+ * app. Es el que acordó el municipio, y vive en `src/config/municipio.ts`.
  */
-export const REPARTO_INICIAL: Cuadrilla[] = [
-  { numero: 1, localidades: ["Nueva Atlantis", "Mar de Ajó"] },
-  {
-    numero: 2,
-    localidades: [
-      "Costa Azul",
-      "La Lucila",
-      "Aguas Verdes",
-      "Costa del Este",
-      "Mar del Tuyú",
-    ],
-  },
-  { numero: 3, localidades: ["Santa Teresita", "Costa Chica"] },
-  { numero: 4, localidades: ["Las Toninas", "San Clemente"] },
-];
+export const REPARTO_INICIAL: Cuadrilla[] = REPARTO_INICIAL_CUADRILLAS;
 
 /**
  * A qué cuadrilla le toca una localidad.

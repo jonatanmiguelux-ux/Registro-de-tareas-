@@ -1,3 +1,5 @@
+import { LOCALIDADES_POR_SIGLA } from "@/config/municipio";
+
 /**
  * Localidades del partido, con las abreviaturas que se escriben en el papel.
  *
@@ -5,20 +7,11 @@
  * anota la sigla. Guardar la sigla haría que el historial, los filtros y el
  * Excel salgan en un código que sólo entiende quien llenó la hoja, así que se
  * normaliza al ingresar y en la base queda el nombre completo.
+ *
+ * La lista de cada municipio vive en `src/config/municipio.ts`, el único
+ * archivo que se toca al copiar la app para otro partido.
  */
-const POR_SIGLA: Record<string, string> = {
-  na: "Nueva Atlantis",
-  mda: "Mar de Ajó",
-  ca: "Costa Azul",
-  ll: "La Lucila",
-  av: "Aguas Verdes",
-  ce: "Costa del Este",
-  mdt: "Mar del Tuyú",
-  st: "Santa Teresita",
-  cch: "Costa Chica",
-  lt: "Las Toninas",
-  sc: "San Clemente",
-};
+const POR_SIGLA = LOCALIDADES_POR_SIGLA;
 
 /** Las siglas y su nombre, para mostrar en pantalla y para el prompt. */
 export const LOCALIDADES = Object.entries(POR_SIGLA).map(([sigla, nombre]) => ({
@@ -29,12 +22,12 @@ export const LOCALIDADES = Object.entries(POR_SIGLA).map(([sigla, nombre]) => ({
 /**
  * Deja el texto comparable: sin mayúsculas, sin tildes y con un solo espacio.
  *
- * Las tildes importan más de lo que parece. Tres de las once localidades
- * llevan una —Mar de Ajó, Mar del Tuyú, Nueva Atlantis no— y quien escribe
- * casi nunca la pone: ni la IA que lee la letra manuscrita, ni alguien
- * tecleando rápido en un celular. Sin esto, "Mar de Ajo" no se reconocía como
- * Mar de Ajó, y el reclamo quedaba **sin cuadrilla asignada**: nadie lo
- * recibía y nadie se enteraba de que no lo había recibido.
+ * Las tildes importan más de lo que parece. Muchas localidades llevan una
+ * —"Mar de Ajó", "Mar del Tuyú"— y quien escribe casi nunca la pone: ni la IA
+ * que lee la letra manuscrita, ni alguien tecleando rápido en un celular. Sin
+ * esto, "Mar de Ajo" no se reconocía como "Mar de Ajó", y el reclamo quedaba
+ * **sin cuadrilla asignada**: nadie lo recibía y nadie se enteraba de que no
+ * lo había recibido.
  */
 function comparable(texto: string): string {
   return texto

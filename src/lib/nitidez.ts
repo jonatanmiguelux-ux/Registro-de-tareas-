@@ -1,4 +1,5 @@
 import * as SunCalc from "suncalc";
+import { COORDENADAS } from "@/config/municipio";
 
 /**
  * Mide si una foto salió movida, sin IA y sin mandarla a ningún lado.
@@ -129,14 +130,16 @@ function cargar(archivo: File): Promise<Mapa | null> {
 }
 
 /**
- * Punto medio del partido de La Costa, para calcular el sol.
+ * Un punto dentro del partido, para calcular el sol.
  *
- * Todas las localidades están sobre la misma franja de costa: entre San
- * Clemente y Nueva Atlantis el sol se oculta con menos de dos minutos de
- * diferencia. No vale la pena pedirle la ubicación al vecino —un permiso más,
- * y una razón más para abandonar— por una precisión que nadie va a notar.
+ * Todas las localidades de un mismo municipio caen sobre la misma franja: el
+ * sol sale y se oculta casi a la misma hora en todas. No vale la pena pedirle
+ * la ubicación al vecino —un permiso más, y una razón más para abandonar— por
+ * una precisión que nadie va a notar.
+ *
+ * Las coordenadas de cada municipio viven en `src/config/municipio.ts`.
  */
-const LA_COSTA = { latitud: -36.54, longitud: -56.69 };
+const PUNTO_DEL_PARTIDO = COORDENADAS;
 
 /**
  * ¿Está oscuro para quien está mirando la pantalla?
@@ -154,8 +157,8 @@ const LA_COSTA = { latitud: -36.54, longitud: -56.69 };
 export function esDeNoche(fecha = new Date()): boolean {
   const { sunrise, sunset } = SunCalc.getTimes(
     fecha,
-    LA_COSTA.latitud,
-    LA_COSTA.longitud,
+    PUNTO_DEL_PARTIDO.latitud,
+    PUNTO_DEL_PARTIDO.longitud,
   );
 
   // En latitudes altas puede no haber salida o puesta ese día; acá no pasa,
