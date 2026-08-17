@@ -8,22 +8,32 @@ import { usuarioDeApi, rolDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
+// Cada campo lleva un tope. Estos textos salen de la IA y de la corrección a
+// mano, así que el largo esperado es el de un dato de planilla; sin límite,
+// una petición hecha a mano podía guardar miles de caracteres por campo y por
+// fila. Los datos cortos (fecha, móvil, incidente) van holgados; las notas
+// largas (diagnóstico, observaciones) tienen más aire, pero acotado.
+const corto = z.string().max(200).nullable();
+const largo = z.string().max(2000).nullable();
+
 const ReclamoCorregido = z.object({
-  id: z.string(),
-  fecha: z.string().nullable(),
-  oficial: z.string().nullable(),
-  chofer: z.string().nullable(),
-  movil: z.string().nullable(),
-  localidad: z.string().nullable(),
-  tipoReclamo: z.string().nullable(),
-  fechaIngreso: z.string().nullable(),
-  nroIncidente: z.string().nullable(),
-  calle: z.string().nullable(),
-  numero: z.string().nullable(),
-  diagnostico: z.string().nullable(),
-  observaciones: z.string().nullable(),
+  id: z.string().max(40),
+  fecha: corto,
+  oficial: corto,
+  chofer: corto,
+  movil: corto,
+  localidad: corto,
+  tipoReclamo: corto,
+  fechaIngreso: corto,
+  nroIncidente: corto,
+  calle: corto,
+  numero: corto,
+  diagnostico: largo,
+  observaciones: largo,
   /** IDs de material marcados tras la corrección humana. */
-  materiales: z.array(z.object({ materialId: z.string(), cantidad: z.number() })),
+  materiales: z.array(
+    z.object({ materialId: z.string().max(40), cantidad: z.number() }),
+  ).max(100),
 });
 
 const CuerpoPatch = z.object({
@@ -71,7 +81,7 @@ export async function PATCH(
   if (!sesion.ok) return sesion.respuesta;
 
   const { id } = await params;
-  const cuerpo = CuerpoPatch.safeParse(await request.json());
+  const cuerpo = CuerpoPatch.safeParse(await request.json().catch(() => null));
 
   if (!cuerpo.success) {
     return NextResponse.json(

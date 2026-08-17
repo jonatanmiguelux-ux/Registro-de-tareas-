@@ -16,11 +16,13 @@ export async function GET() {
 }
 
 const Movimiento = z.object({
-  materialId: z.string().min(1),
+  materialId: z.string().min(1).max(40),
   tipo: z.enum(["ENTRADA", "SALIDA"]),
-  cantidad: z.number().positive(),
-  fecha: z.string().nullable().optional(),
-  nota: z.string().nullable().optional(),
+  // Acotada por arriba: sin tope, un número enorme desbordaría los cálculos
+  // de stock. 1.000.000 es holgado para cualquier depósito real.
+  cantidad: z.number().positive().max(1_000_000),
+  fecha: z.string().max(40).nullable().optional(),
+  nota: z.string().max(500).nullable().optional(),
 });
 
 /** POST /api/stock — registra una entrada o una salida de depósito. */
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
   const sesion = await usuarioDeApi();
   if (!sesion.ok) return sesion.respuesta;
 
-  const cuerpo = Movimiento.safeParse(await request.json());
+  const cuerpo = Movimiento.safeParse(await request.json().catch(() => null));
   if (!cuerpo.success) {
     return NextResponse.json(
       { error: "Datos inválidos.", detalle: cuerpo.error.issues },
@@ -58,8 +60,8 @@ export async function POST(request: Request) {
 }
 
 const StockInicial = z.object({
-  materialId: z.string().min(1),
-  stockInicial: z.number().min(0),
+  materialId: z.string().min(1).max(40),
+  stockInicial: z.number().min(0).max(1_000_000),
 });
 
 /**
@@ -72,7 +74,7 @@ export async function PATCH(request: Request) {
   const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
-  const cuerpo = StockInicial.safeParse(await request.json());
+  const cuerpo = StockInicial.safeParse(await request.json().catch(() => null));
   if (!cuerpo.success) {
     return NextResponse.json(
       { error: "Datos inválidos.", detalle: cuerpo.error.issues },
@@ -91,14 +93,14 @@ export async function PATCH(request: Request) {
   }
 }
 
-const BorrarMovimiento = z.object({ id: z.string().min(1) });
+const BorrarMovimiento = z.object({ id: z.string().min(1).max(40) });
 
 /** DELETE /api/stock — deshace un movimiento cargado por error. */
 export async function DELETE(request: Request) {
   const sesion = await rolDeApi("ENCARGADO");
   if (!sesion.ok) return sesion.respuesta;
 
-  const cuerpo = BorrarMovimiento.safeParse(await request.json());
+  const cuerpo = BorrarMovimiento.safeParse(await request.json().catch(() => null));
   if (!cuerpo.success) {
     return NextResponse.json({ error: "Falta el id." }, { status: 400 });
   }

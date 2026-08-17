@@ -45,7 +45,7 @@ export async function PATCH(
     );
   }
 
-  const cuerpo = Cambios.safeParse(await request.json());
+  const cuerpo = Cambios.safeParse(await request.json().catch(() => null));
   if (!cuerpo.success) {
     return NextResponse.json({ error: "Datos inválidos." }, { status: 400 });
   }

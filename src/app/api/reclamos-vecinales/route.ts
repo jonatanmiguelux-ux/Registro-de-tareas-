@@ -93,6 +93,16 @@ export async function POST(request: Request) {
     );
   }
 
+  // Calle y altura son texto libre del vecino. Sin tope, una petición hecha a
+  // mano podía guardar miles de caracteres por campo. La localidad sale de una
+  // lista fija, pero se acota igual por si un día deja de estarlo.
+  if (localidad.length > 80 || calle.length > 200 || numero.length > 40) {
+    return NextResponse.json(
+      { error: "Alguno de los datos de la dirección es demasiado largo." },
+      { status: 400 },
+    );
+  }
+
   const archivo = foto as File;
   if (archivo.size > TAMANIO_MAXIMO) {
     return NextResponse.json(

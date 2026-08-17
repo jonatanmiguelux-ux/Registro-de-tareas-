@@ -15,7 +15,7 @@ export async function GET() {
 }
 
 const Asignacion = z.object({
-  localidad: z.string().trim().min(1),
+  localidad: z.string().trim().min(1).max(80),
   /** null saca la localidad de toda cuadrilla. */
   numero: z.number().int().positive().nullable(),
 });
