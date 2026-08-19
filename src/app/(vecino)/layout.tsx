@@ -45,7 +45,7 @@ export default function LayoutVecino({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="tema-vecino flex min-h-dvh flex-col">
       <header className="border-b border-[var(--color-borde)] bg-white">
         <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-4 py-3.5">
           <Link

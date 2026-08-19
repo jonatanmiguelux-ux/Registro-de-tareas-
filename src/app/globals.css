@@ -92,6 +92,19 @@ body > header {
   border-radius: 0.375rem;
 }
 
+/*
+ * Identidad de la app del vecino: verde de servicio público, distinto al azul
+ * del municipio. Se aplica en el layout del vecino y redefine sólo el acento;
+ * como los botones, enlaces y tarjetas leen estas variables, toda la app del
+ * vecino se pinta de verde sin tocar un solo componente. El municipio, que no
+ * lleva esta clase, sigue en azul.
+ */
+.tema-vecino {
+  --color-acento: #1d7a52;
+  --color-acento-oscuro: #145c3d;
+  --color-acento-suave: #e7f4ed;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -168,5 +181,10 @@ body > header {
 
   .bajada {
     @apply text-sm leading-relaxed text-[var(--color-tinta-2)];
+  }
+
+  /* Título de sección en la página pública del vecino. */
+  .titulo-seccion {
+    @apply text-xl font-bold tracking-[-0.01em];
   }
 }
