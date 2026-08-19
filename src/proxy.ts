@@ -26,6 +26,11 @@ const PUBLICAS = [
   "/api/auth",
   "/manifest.webmanifest",
   "/sw.js",
+  // El manifest y el service worker de la app del vecino. El navegador los
+  // pide sin credenciales para poder ofrecer instalarla; sin esto, no se
+  // podría instalar.
+  "/vecino.webmanifest",
+  "/sw-vecino.js",
   "/sin-conexion.html",
   "/icono",
   // Lo del vecino que no necesita cuenta: la página que explica el servicio y
@@ -60,6 +65,9 @@ function permitidaParaVecinos(ruta: string): boolean {
     // entrar desde su propio dominio.
     ruta.startsWith("/api/auth/") ||
     ruta.startsWith("/icono/") ||
+    // Para poder instalar la app desde el dominio del vecino.
+    ruta === "/vecino.webmanifest" ||
+    ruta === "/sw-vecino.js" ||
     ruta === "/favicon.ico"
   );
 }

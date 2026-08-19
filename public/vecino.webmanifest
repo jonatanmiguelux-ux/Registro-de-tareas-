@@ -1,0 +1,22 @@
+{
+  "name": "Alumbrado publico - La Costa",
+  "short_name": "Alumbrado",
+  "description": "Reporta una luminaria que no funciona en tu cuadra, desde el celular y en un minuto.",
+  "start_url": "/alumbrado",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1d7a52",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "categories": ["utilities"],
+  "icons": [
+    { "src": "/icono/vecino-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icono/vecino-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icono/vecino-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Reportar una luminaria", "url": "/reclamar", "icons": [{ "src": "/icono/vecino-192.png", "sizes": "192x192" }] }
+  ]
+}

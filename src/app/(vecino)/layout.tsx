@@ -23,6 +23,20 @@ export const metadata: Metadata = {
   description:
     "Reportá una luminaria que no funciona sin tener que ir a la delegación.",
   formatDetection: { telephone: false },
+  // Manifest PROPIO del vecino: su nombre, su ícono verde y que abra en la
+  // pantalla de reportar, no en la de planillas del municipio. Sobreescribe
+  // al del municipio, que sólo se enlaza del otro lado.
+  manifest: "/vecino.webmanifest",
+  // iOS no lee el manifest: la app instalada desde Safari toma el ícono y el
+  // nombre de acá.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Alumbrado",
+  },
+  icons: {
+    apple: "/icono/vecino-192.png",
+  },
 };
 
 export default function LayoutVecino({

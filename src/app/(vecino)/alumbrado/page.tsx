@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
+import { InstalarVecino } from "@/components/InstalarVecino";
 
 /**
  * La cara pública del servicio.
@@ -115,6 +116,10 @@ export default function PaginaAlumbrado() {
           ))}
         </dl>
       </section>
+
+      {/* Ofrece instalar la app. Se muestra solo si se puede y si no está ya
+          instalada; en una compu de escritorio no aparece. */}
+      <InstalarVecino />
 
       <section className="tarjeta bg-[var(--color-acento-suave)] p-6 text-center">
         <p className="text-base font-semibold">
