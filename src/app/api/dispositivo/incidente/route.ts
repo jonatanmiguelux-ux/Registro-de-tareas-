@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { dispositivoActual } from "@/lib/dispositivo";
+import { avisarReclamoRealizado } from "@/lib/notificaciones-vecino";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,15 @@ export async function POST(request: Request) {
 
   const reclamo = await prisma.reclamoVecinal.findUnique({
     where: { codigo: cuerpo.data.codigo.toUpperCase() },
-    select: { cuadrilla: true },
+    select: {
+      cuadrilla: true,
+      estado: true,
+      contacto: true,
+      codigo: true,
+      calle: true,
+      numero: true,
+      localidad: true,
+    },
   });
 
   // Que exista y que sea de la cuadrilla de este celular. Si no, se responde
@@ -59,6 +68,14 @@ export async function POST(request: Request) {
       derivadoEn: new Date(),
     },
   });
+
+  // El aviso al vecino, sólo si el reclamo recién ahora pasa a derivado.
+  if (reclamo.estado !== "DERIVADO") {
+    await avisarReclamoRealizado({
+      ...reclamo,
+      nroIncidente: cuerpo.data.nroIncidente,
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

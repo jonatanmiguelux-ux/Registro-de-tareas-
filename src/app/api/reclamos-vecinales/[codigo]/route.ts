@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { usuarioDeApi } from "@/lib/sesion";
+import { avisarReclamoRealizado } from "@/lib/notificaciones-vecino";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,15 @@ export async function PATCH(
 
   const reclamo = await prisma.reclamoVecinal.findUnique({
     where: { codigo: codigo.toUpperCase() },
-    select: { id: true, estado: true },
+    select: {
+      id: true,
+      estado: true,
+      contacto: true,
+      codigo: true,
+      calle: true,
+      numero: true,
+      localidad: true,
+    },
   });
 
   if (!reclamo) {
@@ -59,6 +68,13 @@ export async function PATCH(
         : {}),
     },
   });
+
+  // El aviso al vecino sale sólo cuando el reclamo **pasa** a derivado, no en
+  // cada guardado: si ya estaba derivado y sólo se toca una nota, no se le
+  // manda un correo de más.
+  if (nroIncidente && reclamo.estado !== "DERIVADO") {
+    await avisarReclamoRealizado({ ...reclamo, nroIncidente });
+  }
 
   return NextResponse.json({ ok: true });
 }
