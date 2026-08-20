@@ -44,6 +44,8 @@ const PUBLICAS = [
   // ningún dato: sólo explica cómo activar el celular.
   "/c",
   "/cuadrilla",
+  // Diagnóstico temporal de sesión (se saca cuando se resuelve).
+  "/api/diag",
 ];
 
 /** Rutas por las que puede pasar un celular de cuadrilla ya activado. */
