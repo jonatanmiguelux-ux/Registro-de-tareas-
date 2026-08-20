@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { COOKIE_DISPOSITIVO } from "@/lib/dispositivo-cookie";
 
 /**
  * Portón de entrada: nada de la app se sirve sin sesión.
@@ -38,7 +39,23 @@ const PUBLICAS = [
   // exigen sesión, y eso lo resuelve cada pantalla contra la base.
   "/alumbrado",
   "/ingresar",
+  // Celular de cuadrilla: la activación (/c/<código>) y la pantalla, que se
+  // abren sin sesión de Google. La pantalla sin galleta válida no muestra
+  // ningún dato: sólo explica cómo activar el celular.
+  "/c",
+  "/cuadrilla",
 ];
+
+/** Rutas por las que puede pasar un celular de cuadrilla ya activado. */
+function esRutaDeDispositivo(ruta: string): boolean {
+  return (
+    ruta === "/cuadrilla" ||
+    ruta.startsWith("/c/") ||
+    ruta.startsWith("/api/dispositivo/") ||
+    // La foto de un reclamo (el endpoint valida que sea de su cuadrilla).
+    (ruta.startsWith("/api/reclamos-vecinales/") && ruta.endsWith("/foto"))
+  );
+}
 
 /**
  * Lo que se puede ver desde el dominio del vecino.
@@ -210,6 +227,31 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (esPublica(pathname)) return conCabeceras(seguir(), csp);
+
+  // ── Celular de cuadrilla ──────────────────────────────────────────────
+  //
+  // No tiene sesión de Google: entra con la galleta de dispositivo. El proxy
+  // sólo mira que la galleta exista y que la ruta sea de las suyas; quién es
+  // de verdad —y de qué cuadrilla— lo valida la página o el endpoint contra la
+  // base. Un celular de cuadrilla no llega a ninguna otra pantalla del
+  // municipio: si intenta, vuelve a la suya.
+  const tieneDispositivo = request.cookies.has(COOKIE_DISPOSITIVO);
+  if (tieneDispositivo) {
+    if (esRutaDeDispositivo(pathname)) return conCabeceras(seguir(), csp);
+    if (pathname.startsWith("/api/")) {
+      return conCabeceras(
+        NextResponse.json(
+          { error: "Este celular sólo puede ver su cuadrilla." },
+          { status: 403 },
+        ),
+        csp,
+      );
+    }
+    return conCabeceras(
+      NextResponse.redirect(new URL("/cuadrilla", request.url)),
+      csp,
+    );
+  }
 
   // El nombre de la galleta de sesión depende del **protocolo real**, no del
   // modo en que corre la app: sobre HTTPS Auth.js la guarda con prefijo

@@ -433,6 +433,15 @@ model Cuadrilla {
   /// el endpoint, que la saca de la anterior al asignarla.
   localidades String[]
 
+  /// Código secreto para el acceso desde el celular de la cuadrilla.
+  ///
+  /// El administrador genera un enlace con este código y lo abre una vez en el
+  /// teléfono del equipo; desde ahí ese celular queda fijado a esta cuadrilla y
+  /// ve sólo sus reclamos, sin cuenta de Google. Nulo mientras no se generó.
+  /// Regenerarlo invalida el enlace anterior: así se "desactiva" un teléfono
+  /// perdido.
+  tokenAcceso String? @unique
+
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
