@@ -115,7 +115,7 @@ export default function PaginaAlumbrado() {
           className="foto-difuminada mx-auto w-full max-w-2xl"
           loading="lazy"
         />
-        <p className="-mt-2 text-sm text-[var(--color-tinta-3)]">
+        <p className="mx-auto mt-1 max-w-md text-xl font-semibold leading-snug tracking-[-0.01em] text-balance text-[var(--color-acento-oscuro)]">
           Cuidar el alumbrado es cuidar nuestra ciudad.
         </p>
       </section>

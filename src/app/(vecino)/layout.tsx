@@ -88,27 +88,17 @@ function Farola() {
       className="grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--color-acento)]"
       aria-hidden="true"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M7.4 20V8.3q0-2.1 2.1-2.1h1.4"
-          stroke="#fff"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-        <path d="M10.6 4.9h5.2l-1.2 3.2h-2.8z" fill="#fff" />
-        <path
-          d="M11.6 9.6l1.2 1.8M14.9 9.6l-1.2 1.8"
-          stroke="#fff"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-        <path
-          d="M5.6 20.2h3.6"
-          stroke="#fff"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
+      {/* Lamparita encendida, igual que el ícono de la app: un bulbo con sus
+          rayos y la base. */}
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+        <g stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.9">
+          <line x1="12" y1="2.4" x2="12" y2="4.4" />
+          <line x1="5.2" y1="5.2" x2="6.6" y2="6.6" />
+          <line x1="18.8" y1="5.2" x2="17.4" y2="6.6" />
+        </g>
+        <circle cx="12" cy="11" r="4.8" fill="#fff" />
+        <rect x="9.6" y="15.9" width="4.8" height="1.7" rx="0.85" fill="#fff" />
+        <rect x="10.4" y="18.2" width="3.2" height="1.6" rx="0.8" fill="#fff" />
       </svg>
     </span>
   );

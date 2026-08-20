@@ -100,9 +100,12 @@ body > header {
  * lleva esta clase, sigue en azul.
  */
 .tema-vecino {
-  --color-acento: #1d7a52;
-  --color-acento-oscuro: #145c3d;
-  --color-acento-suave: #e7f4ed;
+  /* Verde emerald más fresco y limpio que el anterior (que tiraba a apagado),
+     pero lo bastante oscuro para que el texto blanco de los botones se lea
+     bien: 4,7:1 de contraste, por encima del mínimo accesible. */
+  --color-acento: #0b8452;
+  --color-acento-oscuro: #086840;
+  --color-acento-suave: #e6f6ee;
 }
 
 @media (prefers-reduced-motion: reduce) {
