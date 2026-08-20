@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { RolUsuario, EstadoUsuario } from "@prisma/client";
 import { alcanza, NOMBRE_ROL } from "@/lib/roles";
+import { cerrarSesionMunicipio } from "@/lib/sesion-acciones";
 
 type Usuario = {
   nombre: string | null;
@@ -123,9 +124,9 @@ export function MenuUsuario() {
             </Link>
           )}
 
-          {/* Formulario y no fetch: cerrar sesión tiene que limpiar la cookie
-              del servidor, y el endpoint de Auth.js espera un POST. */}
-          <form action="/api/auth/signout" method="post">
+          {/* Server action, no POST a mano: cerrar sesión necesita token CSRF
+              y limpiar la cookie del servidor. Ver sesion-acciones.ts. */}
+          <form action={cerrarSesionMunicipio}>
             <button
               type="submit"
               className="w-full border-t border-[var(--color-borde)] px-4 py-2.5 text-left text-sm transition hover:bg-slate-50"

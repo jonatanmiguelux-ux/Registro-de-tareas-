@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cerrarSesionVecino } from "@/lib/sesion-acciones";
 
 /**
  * Lo que ve el vecino arriba a la derecha: sus reclamos y salir.
@@ -54,9 +55,9 @@ export function MenuVecino() {
       >
         Mis reclamos
       </Link>
-      {/* Formulario y no enlace: cerrar sesión tiene que limpiar la cookie del
-          servidor, y el endpoint de Auth.js espera un POST. */}
-      <form action="/api/auth/signout" method="post">
+      {/* Server action, no POST a mano: cerrar sesión necesita token CSRF
+          y limpiar la cookie del servidor. Ver sesion-acciones.ts. */}
+      <form action={cerrarSesionVecino}>
         <button
           type="submit"
           className="text-sm text-[var(--color-tinta-3)] transition hover:text-[var(--color-tinta)]"
