@@ -24,12 +24,17 @@ export function AccionesCuenta({
   id,
   estado,
   rol,
+  cuadrilla,
+  cuadrillasDisponibles,
   esYo,
   puedeCambiarRol,
 }: {
   id: string;
   estado: Estado;
   rol: Rol;
+  cuadrilla: number | null;
+  /** Números de cuadrilla que existen, para el desplegable. */
+  cuadrillasDisponibles: number[];
   esYo: boolean;
   puedeCambiarRol: boolean;
 }) {
@@ -37,7 +42,11 @@ export function AccionesCuenta({
   const [enviando, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function cambiar(cambios: { estado?: Estado; rol?: Rol }) {
+  function cambiar(cambios: {
+    estado?: Estado;
+    rol?: Rol;
+    cuadrilla?: number | null;
+  }) {
     setError(null);
     iniciar(async () => {
       try {
@@ -100,6 +109,35 @@ export function AccionesCuenta({
               {NOMBRE_ROL[rol]}
             </span>
           )}
+
+          {/* Cuadrilla asignada. Sólo el administrador puede cambiarla; para el
+              resto se muestra como texto. Define qué reclamos ve la persona en
+              "Mi cuadrilla". "Sin cuadrilla" es válido: administración, o un
+              jefe que coordina todas. */}
+          {puedeCambiarRol ? (
+            <select
+              className="campo min-h-0 w-auto py-1.5 text-xs"
+              value={cuadrilla ?? ""}
+              disabled={enviando}
+              onChange={(e) =>
+                cambiar({
+                  cuadrilla: e.target.value === "" ? null : Number(e.target.value),
+                })
+              }
+              aria-label="Cuadrilla"
+            >
+              <option value="">Sin cuadrilla</option>
+              {cuadrillasDisponibles.map((n) => (
+                <option key={n} value={n}>
+                  Cuadrilla {n}
+                </option>
+              ))}
+            </select>
+          ) : cuadrilla !== null ? (
+            <span className="text-xs text-[var(--color-tinta-3)]">
+              Cuadrilla {cuadrilla}
+            </span>
+          ) : null}
 
           <button
             type="button"

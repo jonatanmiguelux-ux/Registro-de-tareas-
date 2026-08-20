@@ -27,6 +27,7 @@ export async function GET() {
       imagen: usuario.imagen,
       rol: usuario.rol,
       estado: usuario.estado,
+      cuadrilla: usuario.cuadrilla,
     },
   });
 }

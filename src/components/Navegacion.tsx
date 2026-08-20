@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,13 +13,50 @@ import { usePathname } from "next/navigation";
  * el teléfono — la otra está ocupada con la planilla de papel.
  */
 
-const SECCIONES = [
+type Seccion = {
+  href: string;
+  texto: string;
+  icono: (p: { activa: boolean }) => React.ReactElement;
+};
+
+const SECCIONES: Seccion[] = [
   { href: "/", texto: "Cargar", icono: Camara },
   { href: "/registros", texto: "Registros", icono: Lista },
   { href: "/vecinos", texto: "Vecinos", icono: Vecinos },
   { href: "/tablero", texto: "Tablero", icono: Grafico },
   { href: "/stock", texto: "Stock", icono: Caja },
-] as const;
+];
+
+/**
+ * Suma la pestaña "Mi cuadrilla" sólo a quien tiene una cuadrilla asignada.
+ *
+ * Se consulta la sesión desde el navegador —igual que el menú de usuario— para
+ * no obligar al layout a leerla en el servidor, lo que volvería dinámicas todas
+ * las pantallas. Mientras llega la respuesta se muestran las secciones base;
+ * después aparece la pestaña, sin recargar.
+ */
+function useSecciones(): Seccion[] {
+  const [cuadrilla, setCuadrilla] = useState<number | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+    fetch("/api/sesion")
+      .then((r) => (r.ok ? r.json() : { usuario: null }))
+      .then((d) => {
+        if (vigente) setCuadrilla(d.usuario?.cuadrilla ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  if (cuadrilla === null) return SECCIONES;
+  return [
+    ...SECCIONES,
+    { href: "/mi-cuadrilla", texto: "Mi cuadrilla", icono: Casco },
+  ];
+}
 
 /** `/` sólo coincide exacto; el resto también en sus subpáginas. */
 function estaActiva(href: string, ruta: string): boolean {
@@ -43,12 +81,13 @@ function esPublica(ruta: string): boolean {
 
 export function NavegacionSuperior() {
   const ruta = usePathname();
+  const secciones = useSecciones();
 
   if (esPublica(ruta)) return null;
 
   return (
     <nav className="hidden items-center gap-1 sm:flex">
-      {SECCIONES.map((s) => {
+      {secciones.map((s) => {
         const activa = estaActiva(s.href, ruta);
         return (
           <Link
@@ -71,6 +110,7 @@ export function NavegacionSuperior() {
 
 export function NavegacionInferior() {
   const ruta = usePathname();
+  const secciones = useSecciones();
 
   if (esPublica(ruta)) return null;
 
@@ -79,8 +119,13 @@ export function NavegacionInferior() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-borde)] bg-white/95 backdrop-blur sm:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="grid grid-cols-5">
-        {SECCIONES.map((s) => {
+      <ul
+        className="grid"
+        style={{
+          gridTemplateColumns: `repeat(${secciones.length}, minmax(0, 1fr))`,
+        }}
+      >
+        {secciones.map((s) => {
           const activa = estaActiva(s.href, ruta);
           const Icono = s.icono;
           return (
@@ -200,6 +245,22 @@ function Caja({ activa }: Props) {
       />
       <path d="M12 3.4 20 7.5v9L12 20.6 4 16.5v-9z" />
       <path d="M4 7.5 12 11.6l8-4.1M12 11.6v9" />
+    </svg>
+  );
+}
+
+/** Casco de obra, para "Mi cuadrilla". */
+function Casco({ activa }: Props) {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path
+        d="M4 16a8 8 0 0 1 16 0z"
+        fill={activa ? "currentColor" : "none"}
+        opacity={activa ? 0.16 : 1}
+      />
+      <path d="M4 16a8 8 0 0 1 16 0z" />
+      <path d="M3 16h18" />
+      <path d="M12 8V5.5M9.5 8.3l-.5-2M14.5 8.3l.5-2" />
     </svg>
   );
 }

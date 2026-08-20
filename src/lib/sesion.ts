@@ -26,6 +26,8 @@ export type Usuario = {
   tipo: TipoUsuario;
   rol: RolUsuario;
   estado: EstadoUsuario;
+  /** Nº de cuadrilla a la que pertenece, o null si no está en ninguna. */
+  cuadrilla: number | null;
 };
 
 /** El usuario de la petición actual, o null si no hay sesión válida. */
@@ -44,6 +46,7 @@ export async function usuarioActual(): Promise<Usuario | null> {
       tipo: true,
       rol: true,
       estado: true,
+      cuadrilla: true,
     },
   });
 
@@ -57,6 +60,7 @@ export async function usuarioActual(): Promise<Usuario | null> {
     tipo: fila.tipo,
     rol: fila.rol,
     estado: fila.estado,
+    cuadrilla: fila.cuadrilla,
   };
 }
 

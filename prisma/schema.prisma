@@ -77,6 +77,12 @@ model User {
   rol    RolUsuario    @default(OPERARIO)
   estado EstadoUsuario @default(PENDIENTE)
 
+  /// A qué cuadrilla pertenece este empleado, si es de una. Nulo para quien
+  /// no está en ninguna (administración, un jefe que coordina todas). Cuando
+  /// tiene una, ve en "Mi cuadrilla" sólo los reclamos de vecinos de esa zona.
+  /// Es el número de la cuadrilla, el mismo que usa ReclamoVecinal.cuadrilla.
+  cuadrilla Int?
+
   /// Quién lo habilitó y cuándo, para poder auditar los accesos.
   habilitadoEn  DateTime?
   habilitadoPor String?

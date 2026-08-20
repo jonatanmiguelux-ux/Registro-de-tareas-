@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requerirRol, NOMBRE_ROL } from "@/lib/sesion";
 import type { RolUsuario, EstadoUsuario } from "@prisma/client";
 import { formatearMomento } from "@/lib/fechas";
+import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import { AccionesCuenta } from "@/components/AccionesCuenta";
 
 export const dynamic = "force-dynamic";
@@ -21,24 +22,30 @@ export default async function PaginaCuentas() {
   const yo = await requerirRol("JEFE");
   const puedeCambiarRol = yo.rol === "ADMINISTRADOR";
 
-  const usuarios = await prisma.user.findMany({
-    // Sólo el personal. Las cuentas de vecino no piden aprobación ni ven nada
-    // del municipio: mezclarlas acá taparía a los tres o cuatro empleados con
-    // cientos de filas que no requieren ninguna decisión.
-    where: { tipo: "PERSONAL" },
-    orderBy: [{ creadoEn: "asc" }],
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      rol: true,
-      estado: true,
-      creadoEn: true,
-      habilitadoEn: true,
-      habilitadoPor: true,
-    },
-  });
+  const [usuarios, cuadrillas] = await Promise.all([
+    prisma.user.findMany({
+      // Sólo el personal. Las cuentas de vecino no piden aprobación ni ven nada
+      // del municipio: mezclarlas acá taparía a los tres o cuatro empleados con
+      // cientos de filas que no requieren ninguna decisión.
+      where: { tipo: "PERSONAL" },
+      orderBy: [{ creadoEn: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        rol: true,
+        estado: true,
+        cuadrilla: true,
+        creadoEn: true,
+        habilitadoEn: true,
+        habilitadoPor: true,
+      },
+    }),
+    listarCuadrillas(),
+  ]);
+
+  const numerosCuadrilla = cuadrillas.map((c) => c.numero);
 
   const pendientes = usuarios.filter((u) => u.estado === "PENDIENTE");
   const resto = usuarios.filter((u) => u.estado !== "PENDIENTE");
@@ -69,6 +76,7 @@ export default async function PaginaCuentas() {
                   usuario={u}
                   esYo={u.id === yo.id}
                   puedeCambiarRol={puedeCambiarRol}
+                  cuadrillasDisponibles={numerosCuadrilla}
                 />
               </li>
             ))}
@@ -96,6 +104,7 @@ export default async function PaginaCuentas() {
                   usuario={u}
                   esYo={u.id === yo.id}
                   puedeCambiarRol={puedeCambiarRol}
+                  cuadrillasDisponibles={numerosCuadrilla}
                 />
               </li>
             ))}
@@ -116,6 +125,7 @@ function Fila({
   usuario,
   esYo,
   puedeCambiarRol,
+  cuadrillasDisponibles,
 }: {
   usuario: {
     id: string;
@@ -124,12 +134,14 @@ function Fila({
     image: string | null;
     rol: RolUsuario;
     estado: EstadoUsuario;
+    cuadrilla: number | null;
     creadoEn: Date;
     habilitadoEn: Date | null;
     habilitadoPor: string | null;
   };
   esYo: boolean;
   puedeCambiarRol: boolean;
+  cuadrillasDisponibles: number[];
 }) {
   const etiquetaEstado = {
     PENDIENTE: {
@@ -182,6 +194,8 @@ function Fila({
         id={usuario.id}
         estado={usuario.estado}
         rol={usuario.rol}
+        cuadrilla={usuario.cuadrilla}
+        cuadrillasDisponibles={cuadrillasDisponibles}
         esYo={esYo}
         puedeCambiarRol={puedeCambiarRol}
       />

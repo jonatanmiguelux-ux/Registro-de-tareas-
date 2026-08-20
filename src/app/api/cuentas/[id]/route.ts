@@ -8,6 +8,9 @@ export const runtime = "nodejs";
 const Cambios = z.object({
   estado: z.enum(["PENDIENTE", "ACTIVO", "BLOQUEADO"]).optional(),
   rol: z.enum(["OPERARIO", "ENCARGADO", "JEFE", "ADMINISTRADOR"]).optional(),
+  // Número de cuadrilla, o null para sacarlo de toda cuadrilla. `optional`
+  // distingue "no lo toques" de `null` que sí es un cambio a "ninguna".
+  cuadrilla: z.number().int().positive().max(99).nullable().optional(),
 });
 
 /**
@@ -70,13 +73,37 @@ export async function PATCH(
     );
   }
 
-  const { estado, rol } = cuerpo.data;
+  const { estado, rol, cuadrilla } = cuerpo.data;
 
   if (rol && sesion.usuario.rol !== "ADMINISTRADOR") {
     return NextResponse.json(
       { error: "Cambiar el rol de una cuenta es sólo del administrador." },
       { status: 403 },
     );
+  }
+
+  // Asignar la cuadrilla es también sólo del administrador, igual que el rol:
+  // define qué reclamos ve cada empleado.
+  const cambiaCuadrilla = cuadrilla !== undefined;
+  if (cambiaCuadrilla && sesion.usuario.rol !== "ADMINISTRADOR") {
+    return NextResponse.json(
+      { error: "Asignar la cuadrilla de una cuenta es sólo del administrador." },
+      { status: 403 },
+    );
+  }
+
+  // Si viene un número, tiene que ser una cuadrilla que exista. Null (sacarlo
+  // de toda cuadrilla) siempre vale.
+  if (cambiaCuadrilla && cuadrilla !== null) {
+    const existe = await prisma.cuadrilla.findUnique({
+      where: { numero: cuadrilla },
+    });
+    if (!existe) {
+      return NextResponse.json(
+        { error: `No existe la cuadrilla ${cuadrilla}.` },
+        { status: 400 },
+      );
+    }
   }
 
   // ¿Este cambio deja al sistema sin administradores?
@@ -106,6 +133,7 @@ export async function PATCH(
     data: {
       ...(estado ? { estado } : {}),
       ...(rol ? { rol } : {}),
+      ...(cambiaCuadrilla ? { cuadrilla } : {}),
       ...(habilitando
         ? {
             habilitadoEn: new Date(),
