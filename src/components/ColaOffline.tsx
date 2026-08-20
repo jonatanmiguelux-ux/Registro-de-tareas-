@@ -39,7 +39,10 @@ export function ColaOffline() {
     const cuantas = await contar();
     setPendientes(cuantas);
     if (cuantas === 0) return;
-    if (navigator.onLine === false) return;
+    // No se le pregunta a `navigator.onLine`: miente seguido (dice "sin
+    // conexión" habiendo). Se intenta subir directamente; si de verdad no hay
+    // red, `vaciar()` lo detecta con el intento fallido y deja las fotos en la
+    // cola para el próximo reintento. Nunca se pierde ninguna.
 
     setSubiendo(true);
     try {

@@ -76,12 +76,11 @@ export function CargarPlanilla() {
     setAnalizando(true);
     setError(null);
 
-    // Sin señal ni siquiera se intenta: se guarda y listo.
-    if (navigator.onLine === false && (await guardarParaDespues())) {
-      setAnalizando(false);
-      return;
-    }
-
+    // Se intenta subir SIEMPRE, sin preguntarle antes a `navigator.onLine`.
+    // Esa bandera del navegador miente seguido —dice "sin conexión" habiendo—,
+    // y usarla para no intentar hacía que planillas con señal se guardaran como
+    // si no la hubiera. La única prueba fiable de que no hay conexión es que el
+    // intento de verdad falle, y eso lo maneja el `catch` de abajo.
     try {
       const cuerpo = new FormData();
       cuerpo.append("imagen", archivo);
