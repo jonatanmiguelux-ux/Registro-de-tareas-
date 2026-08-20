@@ -35,7 +35,15 @@ export const metadata: Metadata = {
     title: "Alumbrado",
   },
   icons: {
-    apple: "/icono/vecino-192.png",
+    // El favicon de la pestaña: la farola verde, distinto al del municipio.
+    // El de 32 está simplificado para que se lea a ese tamaño; los grandes
+    // son para cuando el navegador necesita más resolución.
+    icon: [
+      { url: "/icono/vecino-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icono/vecino-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icono/vecino-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icono/vecino-apple.png",
   },
 };
 
