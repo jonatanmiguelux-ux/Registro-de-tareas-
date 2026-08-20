@@ -47,11 +47,24 @@ export async function avisarReclamoRealizado(
     .filter(Boolean)
     .join("\n");
 
+  // El logo se carga desde el dominio público del vecino (Gmail no muestra
+  // imágenes pegadas ni SVG: tienen que venir de una URL). Si no hay dominio
+  // configurado, el encabezado va sin logo y el correo sale igual.
+  const dominio = process.env.DOMINIO_VECINOS?.trim();
+  const logo = dominio
+    ? `<img src="https://${dominio}/icono/mail-lampara.png" width="52" height="52" alt="" style="display:block;border-radius:12px">`
+    : "";
+
   const html = `
 <div style="font-family:Segoe UI,Arial,sans-serif;max-width:520px;margin:0 auto;color:#17202e;line-height:1.55">
-  <div style="background:#0b8452;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0">
-    <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85">Alumbrado público</div>
-    <div style="font-size:22px;font-weight:700;margin-top:4px">Su pedido fue realizado</div>
+  <div style="background:#0b8452;color:#fff;padding:22px 24px;border-radius:12px 12px 0 0">
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      ${logo ? `<td style="padding-right:14px;vertical-align:middle">${logo}</td>` : ""}
+      <td style="vertical-align:middle">
+        <div style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85">Alumbrado público</div>
+        <div style="font-size:22px;font-weight:700;margin-top:2px">Su pedido fue realizado</div>
+      </td>
+    </tr></table>
   </div>
   <div style="border:1px solid #e1e6ec;border-top:none;border-radius:0 0 12px 12px;padding:24px">
     <p style="margin:0 0 14px">

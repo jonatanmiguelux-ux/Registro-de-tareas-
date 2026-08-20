@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { rolDeApi } from "@/lib/sesion";
+import { avisarReclamoRealizado } from "@/lib/notificaciones-vecino";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/probar-correo — diagnóstico del envío de correos. Sólo administrador.
+ * GET /api/probar-correo — se manda a sí mismo el correo de aviso de prueba.
+ * Sólo administrador.
  *
- * Manda un correo de prueba a la propia casilla de quien lo abre y devuelve la
- * respuesta CRUDA de Resend, para poder ver el error exacto si algo falla
- * (dominio sin verificar, remitente mal escrito, clave inválida). Nunca revela
- * la clave: sólo si está presente y cómo empieza.
+ * Sirve para ver cómo queda el correo "Su pedido fue realizado" —el mismo que
+ * recibe el vecino— sin tener que derivar un reclamo de verdad. Útil para
+ * confirmar que el envío funciona y para revisar el diseño.
  */
 export async function GET() {
   const sesion = await rolDeApi("ADMINISTRADOR");
@@ -19,50 +20,29 @@ export async function GET() {
   const desde = process.env.EMAIL_DESDE?.trim();
   const para = sesion.usuario.email;
 
-  const config = {
-    clavePresente: Boolean(clave),
-    claveEmpieza: clave ? clave.slice(0, 3) + "…" : null,
-    emailDesde: desde ?? null,
-    tuCorreo: para,
-  };
-
   if (!clave || !desde) {
     return NextResponse.json({
-      config,
-      envio: "no se intentó: falta RESEND_API_KEY o EMAIL_DESDE en Render",
+      ok: false,
+      motivo: "Falta RESEND_API_KEY o EMAIL_DESDE en la configuración.",
     });
   }
   if (!para) {
-    return NextResponse.json({
-      config,
-      envio: "no se intentó: tu cuenta no tiene correo",
-    });
+    return NextResponse.json({ ok: false, motivo: "Tu cuenta no tiene correo." });
   }
 
-  let status = 0;
-  let cuerpo: unknown = null;
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${clave}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: desde,
-        to: [para],
-        subject: "Prueba de correo · Alumbrado",
-        text: "Si recibiste esto, el envío de correos funciona.",
-      }),
-    });
-    status = r.status;
-    cuerpo = await r.json().catch(() => null);
-  } catch (e) {
-    cuerpo = { errorDeRed: e instanceof Error ? e.message : String(e) };
-  }
+  // Manda el correo real, con datos de ejemplo, a la propia casilla.
+  await avisarReclamoRealizado({
+    contacto: para,
+    codigo: "PRUEBA-01",
+    calle: "Av. Costanera",
+    numero: "1200",
+    localidad: "Mar de Ajó",
+    nroIncidente: "12345",
+  });
 
   return NextResponse.json({
-    config,
-    envio: { status, respuestaResend: cuerpo },
+    ok: true,
+    enviadoA: para,
+    nota: "Revisá tu correo (y la carpeta de spam la primera vez).",
   });
 }
