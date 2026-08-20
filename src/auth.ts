@@ -25,6 +25,12 @@ import { prisma } from "@/lib/prisma";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [Google],
+  // Confiar en el dominio que llega por la cabecera, en vez de en una
+  // dirección fija. Es lo que permite que la misma app atienda dos dominios
+  // —el del municipio y el del vecino— y que cada login vuelva al suyo. El
+  // proxy pone el dominio real en `x-forwarded-host`; detrás del servidor de
+  // Render, esa cabecera es de confianza.
+  trustHost: true,
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: "/acceso",

@@ -173,6 +173,17 @@ export default async function proxy(request: NextRequest) {
   const cabecerasEntrantes = new Headers(request.headers);
   cabecerasEntrantes.set("x-nonce", nonce);
   cabecerasEntrantes.set("Content-Security-Policy", csp);
+
+  // El dominio real, para que Auth.js arme bien la vuelta desde Google.
+  //
+  // Hay dos dominios sobre la misma app (municipio y vecino), así que no se
+  // puede fijar una única dirección: cada login tiene que volver al dominio
+  // por el que entró, o la galleta de seguridad —que vive en ese dominio— no
+  // coincide y el ingreso falla. Sin esto, y sin una dirección fija, Auth.js
+  // adivina mal y usa la dirección interna del servidor (0.0.0.0). Acá el
+  // `host` sí es el dominio público, así que se lo pasamos explícito.
+  const hostReal = request.headers.get("host");
+  if (hostReal) cabecerasEntrantes.set("x-forwarded-host", hostReal);
   const seguir = () =>
     NextResponse.next({ request: { headers: cabecerasEntrantes } });
 
