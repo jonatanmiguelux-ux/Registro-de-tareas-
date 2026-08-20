@@ -104,38 +104,20 @@ export default function PaginaAlumbrado() {
         </ol>
       </section>
 
-      <section>
-        <h2 className="titulo-seccion">Antes de reportar</h2>
-        <div className="mt-4 space-y-2.5">
-          {[
-            {
-              p: "¿Cuánto tarda en arreglarse?",
-              r: "No podemos prometerte una fecha. Tu reclamo entra en la cola de la cuadrilla de tu zona junto con los demás, y se atiende según la carga de trabajo. Lo que sí podés hacer es ver en qué estado está, con tu número de seguimiento.",
-            },
-            {
-              p: "¿Por qué tengo que entrar con Google?",
-              r: "Para que puedas seguir tus reclamos sin anotar ningún número, y para que sepamos con quién hablar si hace falta un dato más. No pedimos ninguna contraseña nueva: usás la cuenta que ya tenés, y de ahí sólo tomamos tu nombre y tu correo.",
-            },
-            {
-              p: "¿Y si ya lo reportó un vecino?",
-              r: "No pasa nada, reportalo igual. En el municipio se juntan los repetidos; es preferible eso a que nadie avise pensando que ya avisó otro.",
-            },
-            {
-              p: "¿Sirve para otra cosa que no sea alumbrado?",
-              r: "No. Esto es sólo para luminarias de la vía pública. Para cualquier otro reclamo hay que seguir usando los canales de siempre.",
-            },
-          ].map((f) => (
-            <details key={f.p} className="group tarjeta overflow-hidden">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 font-semibold [&::-webkit-details-marker]:hidden">
-                {f.p}
-                <IconoChevron />
-              </summary>
-              <p className="px-4 pb-4 text-sm leading-relaxed text-[var(--color-tinta-2)]">
-                {f.r}
-              </p>
-            </details>
-          ))}
-        </div>
+      {/* Foto de La Costa, con los bordes difuminados a blanco para que se
+          funda con la página. Es decorativa: cierra la nota antes del último
+          llamado a reportar. */}
+      <section className="text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/costa.jpg"
+          alt="Vista aérea de la costa de La Costa"
+          className="foto-difuminada mx-auto w-full max-w-2xl"
+          loading="lazy"
+        />
+        <p className="-mt-2 text-sm text-[var(--color-tinta-3)]">
+          Cuidar el alumbrado es cuidar nuestra ciudad.
+        </p>
       </section>
 
       {/* Ofrece instalar la app. Se muestra solo si se puede y si no está ya
@@ -217,23 +199,6 @@ function IconoRayo() {
   return (
     <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
       <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
-    </svg>
-  );
-}
-
-function IconoChevron() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-5 shrink-0 text-[var(--color-tinta-3)] transition-transform group-open:rotate-180"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }

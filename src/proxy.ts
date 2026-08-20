@@ -258,6 +258,12 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Todo menos los archivos internos de Next y los estáticos con extensión.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
+  // Todo menos los archivos internos de Next y las imágenes estáticas. Éstas
+  // se sirven directo, sin pasar por el portón: son públicas por naturaleza
+  // (íconos, la foto de la portada) y bloquearlas rompía la página. Las fotos
+  // de planillas y reclamos NO entran acá: se sirven por /api/ y siguen
+  // pidiendo sesión.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|webp|svg|gif|ico)$).*)",
+  ],
 };

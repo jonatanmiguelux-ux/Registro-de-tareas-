@@ -188,3 +188,46 @@ body > header {
     @apply text-xl font-bold tracking-[-0.01em];
   }
 }
+
+/*
+ * Foto con los cuatro bordes difuminados, que se funden con el fondo de la
+ * página. Se cruzan dos máscaras —una horizontal y una vertical— que se van a
+ * transparente en cada borde; como el fondo es casi blanco, el efecto es un
+ * desvanecido a blanco parejo, sin recuadro ni costura. El radial no servía:
+ * en una foto ancha dejaba los lados casi sin difuminar.
+ */
+.foto-difuminada {
+  --borde: 12%;
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--borde),
+      #000 calc(100% - var(--borde)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--borde),
+      #000 calc(100% - var(--borde)),
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--borde),
+      #000 calc(100% - var(--borde)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--borde),
+      #000 calc(100% - var(--borde)),
+      transparent 100%
+    );
+  mask-composite: intersect;
+}
