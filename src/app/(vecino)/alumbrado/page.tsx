@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { TIPOS_FALLA } from "@/lib/reclamos-vecinales";
-import { InstalarVecino } from "@/components/InstalarVecino";
 
 /**
  * La cara pública del servicio.
@@ -120,9 +119,28 @@ export default function PaginaAlumbrado() {
         </p>
       </section>
 
-      {/* Ofrece instalar la app. Se muestra solo si se puede y si no está ya
-          instalada; en una compu de escritorio no aparece. */}
-      <InstalarVecino />
+      {/* Invita a llevarse la app. Lleva al espacio de descarga, que funciona
+          en todos lados: botón en Android, pasos en iPhone y QR en la compu. */}
+      <section className="tarjeta flex flex-col gap-4 border-[var(--color-acento)] bg-[var(--color-acento-suave)] p-6 sm:flex-row sm:items-center">
+        <span
+          className="grid size-12 shrink-0 place-items-center rounded-xl bg-[var(--color-acento)] text-2xl"
+          aria-hidden="true"
+        >
+          📲
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-semibold">
+            Tené la app a mano en el celular
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--color-tinta-2)]">
+            Instalala y la próxima vez que veas una luz quemada la reportás en un
+            toque, sin buscar la página.
+          </p>
+        </div>
+        <Link href="/descargar" className="boton-primario shrink-0">
+          Descargar la app
+        </Link>
+      </section>
 
       <section className="tarjeta bg-[var(--color-acento-suave)] p-7 text-center">
         <p className="text-lg font-semibold text-balance">

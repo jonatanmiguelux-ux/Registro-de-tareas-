@@ -39,6 +39,7 @@ const PUBLICAS = [
   // la pantalla de ingreso. Reportar, ver un reclamo y ver los propios sí
   // exigen sesión, y eso lo resuelve cada pantalla contra la base.
   "/alumbrado",
+  "/descargar",
   "/ingresar",
   // Celular de cuadrilla: la activación (/c/<código>) y la pantalla, que se
   // abren sin sesión de Google. La pantalla sin galleta válida no muestra
@@ -73,6 +74,7 @@ function permitidaParaVecinos(ruta: string): boolean {
     ruta === "/" ||
     ruta === "/salir" ||
     ruta === "/alumbrado" ||
+    ruta === "/descargar" ||
     ruta === "/ingresar" ||
     ruta === "/reclamar" ||
     ruta === "/mis-reclamos" ||
