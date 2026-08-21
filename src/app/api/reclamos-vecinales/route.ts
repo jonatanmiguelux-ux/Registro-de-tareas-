@@ -11,11 +11,7 @@ import {
   avisoDeDuplicado,
 } from "@/lib/duplicados-vecinales";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
-import {
-  correoValido,
-  generarCodigoSeguimiento,
-  normalizarCorreo,
-} from "@/lib/reclamos-vecinales";
+import { generarCodigoSeguimiento } from "@/lib/reclamos-vecinales";
 import type { TipoFalla } from "@prisma/client";
 
 export const runtime = "nodejs";

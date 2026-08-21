@@ -23,10 +23,6 @@ export const TIPOS_IMAGEN_VALIDOS = [
 
 export type TipoImagen = (typeof TIPOS_IMAGEN_VALIDOS)[number];
 
-export function esTipoImagenValido(tipo: string): tipo is TipoImagen {
-  return (TIPOS_IMAGEN_VALIDOS as readonly string[]).includes(tipo);
-}
-
 let cliente: GoogleGenAI | null = null;
 
 function obtenerCliente(): GoogleGenAI {

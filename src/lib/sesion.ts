@@ -107,11 +107,6 @@ export async function requerirRol(minimo: RolUsuario): Promise<Usuario> {
   return usuario;
 }
 
-/** Atajo para lo que sólo puede el administrador: asignar roles. */
-export async function requerirAdministrador(): Promise<Usuario> {
-  return requerirRol("ADMINISTRADOR");
-}
-
 /**
  * Versión para los endpoints de la API, que no redirigen: devuelven el error.
  *
@@ -206,9 +201,4 @@ export async function rolDeApi(
   }
 
   return resultado;
-}
-
-/** Sólo administradores. Lo que define quién es quién. */
-export async function administradorDeApi() {
-  return rolDeApi("ADMINISTRADOR");
 }

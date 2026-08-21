@@ -48,21 +48,3 @@ export function generarCodigoSeguimiento(): string {
   }
   return `${codigo.slice(0, 4)}-${codigo.slice(4)}`;
 }
-
-/**
- * Normaliza el correo de contacto para guardarlo.
- *
- * Sólo minúsculas y sin espacios: no se tocan los puntos ni los alias con `+`,
- * porque en algunos servidores son direcciones distintas de verdad.
- */
-export function normalizarCorreo(valor: string): string {
-  return valor.trim().toLowerCase();
-}
-
-export function correoValido(valor: string): boolean {
-  // Deliberadamente simple: la comprobación de verdad es que llegue el código.
-  // Una expresión regular estricta rechaza direcciones válidas y raras, y no
-  // aporta nada que el envío no resuelva mejor.
-  const v = normalizarCorreo(valor);
-  return v.length >= 5 && v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
