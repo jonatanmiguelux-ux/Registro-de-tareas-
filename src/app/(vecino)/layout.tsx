@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MenuVecino } from "@/components/MenuVecino";
 import { NOMBRE_MUNICIPIO } from "@/config/municipio";
 
 /**
