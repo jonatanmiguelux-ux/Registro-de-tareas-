@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cerrarSesionVecino } from "@/lib/sesion-acciones";
 
 /**
  * Lo que ve el vecino arriba a la derecha: sus reclamos y salir.
@@ -55,16 +54,14 @@ export function MenuVecino() {
       >
         Mis reclamos
       </Link>
-      {/* Server action, no POST a mano: cerrar sesión necesita token CSRF
-          y limpiar la cookie del servidor. Ver sesion-acciones.ts. */}
-      <form action={cerrarSesionVecino}>
-        <button
-          type="submit"
-          className="text-sm text-[var(--color-tinta-3)] transition hover:text-[var(--color-tinta)]"
-        >
-          Salir
-        </button>
-      </form>
+      {/* Enlace directo a /salir: borra la galleta y redirige, sin
+          formulario ni JavaScript. */}
+      <a
+        href="/salir"
+        className="text-sm text-[var(--color-tinta-3)] transition hover:text-[var(--color-tinta)]"
+      >
+        Salir
+      </a>
     </div>
   );
 }

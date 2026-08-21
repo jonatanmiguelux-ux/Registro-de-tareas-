@@ -16,7 +16,7 @@
  * que fingir que se guardó.
  */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const ESTATICOS = `estaticos-${VERSION}`;
 const CASCARA = `cascara-${VERSION}`;
 const SIN_RED = "/sin-conexion.html";

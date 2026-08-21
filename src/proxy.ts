@@ -24,6 +24,7 @@ import { COOKIE_DISPOSITIVO } from "@/lib/dispositivo-cookie";
  */
 const PUBLICAS = [
   "/acceso",
+  "/salir",
   "/api/auth",
   "/manifest.webmanifest",
   "/sw.js",
@@ -70,6 +71,7 @@ function esRutaDeDispositivo(ruta: string): boolean {
 function permitidaParaVecinos(ruta: string): boolean {
   return (
     ruta === "/" ||
+    ruta === "/salir" ||
     ruta === "/alumbrado" ||
     ruta === "/ingresar" ||
     ruta === "/reclamar" ||

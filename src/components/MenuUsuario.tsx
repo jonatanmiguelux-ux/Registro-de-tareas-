@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { RolUsuario, EstadoUsuario } from "@prisma/client";
 import { alcanza, NOMBRE_ROL } from "@/lib/roles";
-import { cerrarSesionMunicipio } from "@/lib/sesion-acciones";
 
 type Usuario = {
   nombre: string | null;
@@ -124,16 +123,15 @@ export function MenuUsuario() {
             </Link>
           )}
 
-          {/* Server action, no POST a mano: cerrar sesión necesita token CSRF
-              y limpiar la cookie del servidor. Ver sesion-acciones.ts. */}
-          <form action={cerrarSesionMunicipio}>
-            <button
-              type="submit"
-              className="w-full border-t border-[var(--color-borde)] px-4 py-2.5 text-left text-sm transition hover:bg-slate-50"
-            >
-              Cerrar sesión
-            </button>
-          </form>
+          {/* Enlace directo a /salir, que borra la galleta y redirige. Sin
+              formulario ni JavaScript: es lo que menos piezas tiene para
+              fallar, y se puede abrir a mano si algo se traba. */}
+          <a
+            href="/salir"
+            className="block w-full border-t border-[var(--color-borde)] px-4 py-2.5 text-left text-sm transition hover:bg-slate-50"
+          >
+            Cerrar sesión
+          </a>
         </div>
       )}
     </div>
