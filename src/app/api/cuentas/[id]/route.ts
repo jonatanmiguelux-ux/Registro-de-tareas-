@@ -7,7 +7,9 @@ export const runtime = "nodejs";
 
 const Cambios = z.object({
   estado: z.enum(["PENDIENTE", "ACTIVO", "BLOQUEADO"]).optional(),
-  rol: z.enum(["OPERARIO", "ENCARGADO", "JEFE", "ADMINISTRADOR"]).optional(),
+  rol: z
+    .enum(["OPERARIO", "ENCARGADO", "JEFE", "ADMINISTRADOR", "PANOLERO"])
+    .optional(),
   // Número de cuadrilla, o null para sacarlo de toda cuadrilla. `optional`
   // distingue "no lo toques" de `null` que sí es un cambio a "ninguna".
   cuadrilla: z.number().int().positive().max(99).nullable().optional(),

@@ -96,3 +96,15 @@ export const REPARTO_INICIAL_CUADRILLAS: {
   { numero: 3, localidades: ["Santa Teresita", "Costa Chica"] },
   { numero: 4, localidades: ["Las Toninas", "San Clemente"] },
 ];
+
+/**
+ * Los móviles (camiones) que tienen stock propio de materiales.
+ *
+ * Cada móvil lleva su propio stock: el pañol le entrega material y las
+ * planillas que carga ese móvil se lo van descontando. Acá van los números
+ * tal como se escriben en la planilla (la columna "Móvil Nº").
+ *
+ * Para agregar o sacar un móvil, editá esta lista. El resto del sistema —las
+ * pantallas de stock por móvil y la entrega desde el pañol— se acomoda solo.
+ */
+export const MOVILES: number[] = [1, 5, 6, 8];

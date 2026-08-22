@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { RolUsuario } from "@prisma/client";
+import { esPanolero, puedeVerPanol, puedeVerStockMoviles } from "@/lib/roles";
 
 /**
  * Navegación de la app.
@@ -19,31 +21,42 @@ type Seccion = {
   icono: (p: { activa: boolean }) => React.ReactElement;
 };
 
-const SECCIONES: Seccion[] = [
+/** Lo que ve cualquiera del municipio. El stock ya no va acá: depende del rol. */
+const BASE: Seccion[] = [
   { href: "/", texto: "Cargar", icono: Camara },
   { href: "/registros", texto: "Registros", icono: Lista },
   { href: "/vecinos", texto: "Vecinos", icono: Vecinos },
   { href: "/tablero", texto: "Tablero", icono: Grafico },
-  { href: "/stock", texto: "Stock", icono: Caja },
 ];
 
+const MOVILES: Seccion = { href: "/moviles", texto: "Móviles", icono: Camion };
+const PANOL: Seccion = { href: "/panol", texto: "Pañol", icono: Caja };
+
 /**
- * Suma la pestaña "Mi cuadrilla" sólo a quien tiene una cuadrilla asignada.
+ * Arma la navegación según el rol.
  *
  * Se consulta la sesión desde el navegador —igual que el menú de usuario— para
  * no obligar al layout a leerla en el servidor, lo que volvería dinámicas todas
- * las pantallas. Mientras llega la respuesta se muestran las secciones base;
- * después aparece la pestaña, sin recargar.
+ * las pantallas. Mientras llega la respuesta se muestran las secciones base.
+ *
+ * - El pañolero ve **sólo el pañol**: nada más del sistema es lo suyo.
+ * - El stock por móvil es de encargados en adelante; el pañol, de jefes.
+ * - "Mi cuadrilla" aparece si la persona tiene una asignada.
  */
 function useSecciones(): Seccion[] {
-  const [cuadrilla, setCuadrilla] = useState<number | null>(null);
+  const [datos, setDatos] = useState<{
+    rol: RolUsuario;
+    cuadrilla: number | null;
+  } | null>(null);
 
   useEffect(() => {
     let vigente = true;
     fetch("/api/sesion")
       .then((r) => (r.ok ? r.json() : { usuario: null }))
       .then((d) => {
-        if (vigente) setCuadrilla(d.usuario?.cuadrilla ?? null);
+        if (vigente && d.usuario) {
+          setDatos({ rol: d.usuario.rol, cuadrilla: d.usuario.cuadrilla ?? null });
+        }
       })
       .catch(() => {});
     return () => {
@@ -51,11 +64,16 @@ function useSecciones(): Seccion[] {
     };
   }, []);
 
-  if (cuadrilla === null) return SECCIONES;
-  return [
-    ...SECCIONES,
-    { href: "/mi-cuadrilla", texto: "Mi cuadrilla", icono: Casco },
-  ];
+  if (!datos) return BASE;
+  if (esPanolero(datos.rol)) return [PANOL];
+
+  const lista = [...BASE];
+  if (puedeVerStockMoviles(datos.rol)) lista.push(MOVILES);
+  if (puedeVerPanol(datos.rol)) lista.push(PANOL);
+  if (datos.cuadrilla !== null) {
+    lista.push({ href: "/mi-cuadrilla", texto: "Mi cuadrilla", icono: Casco });
+  }
+  return lista;
 }
 
 /** `/` sólo coincide exacto; el resto también en sus subpáginas. */
@@ -245,6 +263,23 @@ function Caja({ activa }: Props) {
       />
       <path d="M12 3.4 20 7.5v9L12 20.6 4 16.5v-9z" />
       <path d="M4 7.5 12 11.6l8-4.1M12 11.6v9" />
+    </svg>
+  );
+}
+
+/** Camión, para "Móviles". */
+function Camion({ activa }: Props) {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path
+        d="M3 7h11v8H3zM14 10h3.2l2.8 2.8V15H14z"
+        fill={activa ? "currentColor" : "none"}
+        opacity={activa ? 0.16 : 1}
+      />
+      <path d="M3 7h11v8H3zM14 10h3.2l2.8 2.8V15H14z" />
+      <path d="M3 15h1M20 15h.5" />
+      <circle cx="7" cy="17" r="1.6" />
+      <circle cx="17" cy="17" r="1.6" />
     </svg>
   );
 }
