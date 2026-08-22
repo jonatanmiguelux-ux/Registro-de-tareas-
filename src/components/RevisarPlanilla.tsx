@@ -112,10 +112,13 @@ export function RevisarPlanilla({
   planilla,
   materiales,
   duplicadosIniciales = [],
+  esAdmin = false,
 }: {
   planilla: PlanillaVista;
   materiales: MaterialVista[];
   duplicadosIniciales?: AvisoDuplicado[];
+  /** Sólo el administrador puede borrar filas sueltas de la planilla. */
+  esAdmin?: boolean;
 }) {
   const router = useRouter();
   const [reclamos, setReclamos] = useState<ReclamoVista[]>(planilla.reclamos);
@@ -171,6 +174,26 @@ export function RevisarPlanilla({
         };
       }),
     );
+  }
+
+  async function borrarReclamo(id: string) {
+    setError(null);
+    try {
+      const respuesta = await fetch(`/api/reclamos/${id}`, {
+        method: "DELETE",
+      });
+      if (!respuesta.ok) {
+        const datos = await respuesta.json().catch(() => ({}));
+        setError(datos.error ?? "No se pudo borrar la fila.");
+        return;
+      }
+      // Se saca de la lista para que Guardar no intente actualizar una fila que
+      // ya no existe. El resto de la planilla queda como estaba.
+      setReclamos((previos) => previos.filter((r) => r.id !== id));
+      router.refresh();
+    } catch {
+      setError("Falló la conexión al borrar. Volvé a intentar.");
+    }
   }
 
   function editarCantidad(id: string, materialId: string, valor: string) {
@@ -338,6 +361,8 @@ export function RevisarPlanilla({
             onObservaciones={editarObservaciones}
             onMaterial={alternarMaterial}
             onCantidad={editarCantidad}
+            esAdmin={esAdmin}
+            onBorrar={borrarReclamo}
           />
         ))}
       </div>
@@ -386,6 +411,8 @@ function FilaReclamo({
   onObservaciones,
   onMaterial,
   onCantidad,
+  esAdmin,
+  onBorrar,
 }: {
   indice: number;
   reclamo: ReclamoVista;
@@ -395,7 +422,10 @@ function FilaReclamo({
   onObservaciones: (id: string, valor: string) => void;
   onMaterial: (id: string, materialId: string) => void;
   onCantidad: (id: string, materialId: string, valor: string) => void;
+  esAdmin: boolean;
+  onBorrar: (id: string) => void;
 }) {
+  const [confirmarBorrar, setConfirmarBorrar] = useState(false);
   const marcados = new Map(
     reclamo.materiales.map((m) => [m.materialId, m.cantidad]),
   );
@@ -439,6 +469,37 @@ function FilaReclamo({
             Revisado
           </span>
         )}
+
+        {/* Borrar la fila entera. Sólo el administrador, y en dos pasos: es
+            destructivo y no se puede deshacer. */}
+        {esAdmin &&
+          (confirmarBorrar ? (
+            <span className="flex items-center gap-2 text-xs">
+              <span className="text-[var(--color-tinta-3)]">¿Borrar la fila?</span>
+              <button
+                type="button"
+                className="font-semibold text-[var(--color-mal)] underline underline-offset-2"
+                onClick={() => onBorrar(reclamo.id)}
+              >
+                Sí, borrar
+              </button>
+              <button
+                type="button"
+                className="text-[var(--color-tinta-3)] underline underline-offset-2"
+                onClick={() => setConfirmarBorrar(false)}
+              >
+                No
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="text-xs text-[var(--color-tinta-3)] underline underline-offset-2 hover:text-[var(--color-mal)]"
+              onClick={() => setConfirmarBorrar(true)}
+            >
+              Borrar fila
+            </button>
+          ))}
       </div>
 
       {duplicado && (

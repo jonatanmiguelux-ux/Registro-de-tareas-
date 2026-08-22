@@ -11,11 +11,37 @@ import { useRouter } from "next/navigation";
  * convivirían dos numeraciones y la cuadrilla recibiría papeles que no cierran
  * con el sistema del municipio.
  */
-export function AccionesReclamoVecinal({ codigo }: { codigo: string }) {
+export function AccionesReclamoVecinal({
+  codigo,
+  esAdmin = false,
+}: {
+  codigo: string;
+  /** Sólo el administrador puede borrar de verdad (además de descartar). */
+  esAdmin?: boolean;
+}) {
   const router = useRouter();
   const [numero, setNumero] = useState("");
   const [enviando, iniciar] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  function borrar() {
+    setError(null);
+    iniciar(async () => {
+      try {
+        const respuesta = await fetch(`/api/reclamos-vecinales/${codigo}`, {
+          method: "DELETE",
+        });
+        if (!respuesta.ok) {
+          const datos = await respuesta.json().catch(() => ({}));
+          setError(datos.error ?? "No se pudo borrar.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("Falló la conexión. Volvé a intentar.");
+      }
+    });
+  }
 
   function guardar(cambios: { nroIncidente?: string; descartar?: boolean }) {
     setError(null);
@@ -90,6 +116,25 @@ export function AccionesReclamoVecinal({ codigo }: { codigo: string }) {
         >
           Descartar
         </button>
+
+        {esAdmin && (
+          <button
+            type="button"
+            className="boton-fantasma min-h-0 px-3 py-2 text-xs text-[var(--color-mal)]"
+            disabled={enviando}
+            onClick={() => {
+              if (
+                confirm(
+                  "Borrar este reclamo para siempre, junto con su foto. No se puede deshacer. ¿Seguro?",
+                )
+              ) {
+                borrar();
+              }
+            }}
+          >
+            Borrar
+          </button>
+        )}
       </div>
 
       {error && (

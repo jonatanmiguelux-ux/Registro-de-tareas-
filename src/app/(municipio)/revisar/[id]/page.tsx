@@ -94,6 +94,7 @@ export default async function PaginaRevisar({
         unidad: m.unidad,
       }))}
       duplicadosIniciales={duplicados}
+      esAdmin={usuario.rol === "ADMINISTRADOR"}
     />
   );
 }

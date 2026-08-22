@@ -6,6 +6,7 @@ import { describirZona } from "@/lib/cuadrillas";
 import { listarCuadrillas } from "@/lib/cuadrillas-db";
 import Link from "next/link";
 import { AccionesReclamoVecinal } from "@/components/AccionesReclamoVecinal";
+import { BorrarReclamoVecinal } from "@/components/BorrarReclamoVecinal";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,8 @@ type Fila = {
  * localidad para saber a quién mandarle cada cosa.
  */
 export default async function PaginaVecinos() {
-  await requerirUsuario();
+  const usuario = await requerirUsuario();
+  const esAdmin = usuario.rol === "ADMINISTRADOR";
 
   const [pendientes, resueltos, cuadrillas] = await Promise.all([
     prisma.reclamoVecinal.findMany({
@@ -107,7 +109,7 @@ export default async function PaginaVecinos() {
               <ul className="divide-y divide-[var(--color-borde)]">
                 {c.reclamos.map((r) => (
                   <li key={r.id} className="p-4">
-                    <Ficha reclamo={r} />
+                    <Ficha reclamo={r} esAdmin={esAdmin} />
                   </li>
                 ))}
               </ul>
@@ -129,7 +131,7 @@ export default async function PaginaVecinos() {
           <ul className="divide-y divide-[var(--color-borde)]">
             {sinZona.map((r) => (
               <li key={r.id} className="p-4">
-                <Ficha reclamo={r} />
+                <Ficha reclamo={r} esAdmin={esAdmin} />
               </li>
             ))}
           </ul>
@@ -170,6 +172,7 @@ export default async function PaginaVecinos() {
                 <span className="ml-auto text-xs text-[var(--color-tinta-3)]">
                   {formatearMomento(r.creadoEn)}
                 </span>
+                {esAdmin && <BorrarReclamoVecinal codigo={r.codigo} />}
               </li>
             ))}
           </ul>
@@ -179,7 +182,7 @@ export default async function PaginaVecinos() {
   );
 }
 
-function Ficha({ reclamo }: { reclamo: Fila }) {
+function Ficha({ reclamo, esAdmin }: { reclamo: Fila; esAdmin: boolean }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -201,7 +204,7 @@ function Ficha({ reclamo }: { reclamo: Fila }) {
         {reclamo.observacion}
       </p>
 
-      <AccionesReclamoVecinal codigo={reclamo.codigo} />
+      <AccionesReclamoVecinal codigo={reclamo.codigo} esAdmin={esAdmin} />
     </div>
   );
 }

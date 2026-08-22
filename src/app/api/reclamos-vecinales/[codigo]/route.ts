@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { usuarioDeApi } from "@/lib/sesion";
+import { usuarioDeApi, rolDeApi } from "@/lib/sesion";
+import { borrarImagen } from "@/lib/almacenamiento";
 import { avisarReclamoRealizado } from "@/lib/notificaciones-vecino";
 
 export const runtime = "nodejs";
@@ -75,6 +76,36 @@ export async function PATCH(
   if (nroIncidente && reclamo.estado !== "DERIVADO") {
     await avisarReclamoRealizado({ ...reclamo, nroIncidente });
   }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * DELETE /api/reclamos-vecinales/:codigo — borra un reclamo de vecino de verdad.
+ *
+ * Sólo el administrador. Distinto de "Descartar", que lo oculta pero lo
+ * conserva: esto lo saca de la base junto con su foto, sin vuelta atrás. Es
+ * para limpiar una prueba, un duplicado o algo cargado por error.
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ codigo: string }> },
+) {
+  const sesion = await rolDeApi("ADMINISTRADOR");
+  if (!sesion.ok) return sesion.respuesta;
+
+  const { codigo } = await params;
+  const reclamo = await prisma.reclamoVecinal.findUnique({
+    where: { codigo: codigo.toUpperCase() },
+    select: { id: true, fotoRuta: true },
+  });
+
+  if (!reclamo) {
+    return NextResponse.json({ error: "No existe el reclamo." }, { status: 404 });
+  }
+
+  await prisma.reclamoVecinal.delete({ where: { id: reclamo.id } });
+  await borrarImagen(reclamo.fotoRuta);
 
   return NextResponse.json({ ok: true });
 }
