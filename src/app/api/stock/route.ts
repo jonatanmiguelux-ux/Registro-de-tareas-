@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { calcularStock } from "@/lib/stock";
+import { stockPanol } from "@/lib/stock";
 import { parsearFecha } from "@/lib/fechas";
-import { usuarioDeApi, rolDeApi } from "@/lib/sesion";
+import { panolDeApi } from "@/lib/sesion";
 
 export const runtime = "nodejs";
 
 /** GET /api/stock — stock actual por material. */
 export async function GET() {
-  const sesion = await usuarioDeApi();
+  const sesion = await panolDeApi();
   if (!sesion.ok) return sesion.respuesta;
 
-  return NextResponse.json(await calcularStock());
+  return NextResponse.json(await stockPanol());
 }
 
 const Movimiento = z.object({
@@ -27,7 +27,7 @@ const Movimiento = z.object({
 
 /** POST /api/stock — registra una entrada o una salida de depósito. */
 export async function POST(request: Request) {
-  const sesion = await usuarioDeApi();
+  const sesion = await panolDeApi();
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = Movimiento.safeParse(await request.json().catch(() => null));
@@ -71,7 +71,7 @@ const StockInicial = z.object({
  * partida del conteo, no un movimiento.
  */
 export async function PATCH(request: Request) {
-  const sesion = await rolDeApi("ENCARGADO");
+  const sesion = await panolDeApi();
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = StockInicial.safeParse(await request.json().catch(() => null));
@@ -97,7 +97,7 @@ const BorrarMovimiento = z.object({ id: z.string().min(1).max(40) });
 
 /** DELETE /api/stock — deshace un movimiento cargado por error. */
 export async function DELETE(request: Request) {
-  const sesion = await rolDeApi("ENCARGADO");
+  const sesion = await panolDeApi();
   if (!sesion.ok) return sesion.respuesta;
 
   const cuerpo = BorrarMovimiento.safeParse(await request.json().catch(() => null));

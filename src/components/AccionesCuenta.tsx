@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RolUsuario, EstadoUsuario } from "@prisma/client";
-import { ESCALERA, NOMBRE_ROL } from "@/lib/roles";
+import { ROLES_ASIGNABLES, NOMBRE_ROL } from "@/lib/roles";
 
 type Estado = EstadoUsuario;
 type Rol = RolUsuario;
@@ -98,7 +98,7 @@ export function AccionesCuenta({
               onChange={(e) => cambiar({ rol: e.target.value as Rol })}
               aria-label="Rol"
             >
-              {ESCALERA.map((r) => (
+              {ROLES_ASIGNABLES.map((r) => (
                 <option key={r} value={r}>
                   {NOMBRE_ROL[r]}
                 </option>

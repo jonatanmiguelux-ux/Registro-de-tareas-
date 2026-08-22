@@ -2,11 +2,17 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { RolUsuario, EstadoUsuario, TipoUsuario } from "@prisma/client";
-import { alcanza, NOMBRE_ROL } from "@/lib/roles";
+import {
+  alcanza,
+  NOMBRE_ROL,
+  esPanolero,
+  puedeVerPanol,
+  puedeVerStockMoviles,
+} from "@/lib/roles";
 
 // Se reexportan para que quien ya pide permisos desde acá no tenga que
 // importar de dos lados.
-export { alcanza, NOMBRE_ROL };
+export { alcanza, NOMBRE_ROL, esPanolero, puedeVerPanol, puedeVerStockMoviles };
 
 /**
  * Quién está usando la app, resuelto **contra la base**.
@@ -70,7 +76,7 @@ export async function usuarioActual(): Promise<Usuario | null> {
  * Redirige a la de acceso si no hay sesión, y a la de espera si la cuenta
  * todavía no fue aprobada o fue bloqueada.
  */
-export async function requerirUsuario(): Promise<Usuario> {
+async function sesionActiva(): Promise<Usuario> {
   const usuario = await usuarioActual();
   if (!usuario) redirect("/acceso");
   // Una cuenta de vecino no entra acá ni aunque tenga sesión válida. En
@@ -79,6 +85,28 @@ export async function requerirUsuario(): Promise<Usuario> {
   // parezca redundante.
   if (usuario.tipo === "VECINO") redirect("/alumbrado");
   if (usuario.estado !== "ACTIVO") redirect("/acceso/pendiente");
+  return usuario;
+}
+
+export async function requerirUsuario(): Promise<Usuario> {
+  const usuario = await sesionActiva();
+  // El pañolero no circula por el sistema general: su única pantalla es el
+  // pañol. Se lo manda ahí desde cualquier otra. El pañol usa `requerirPanol`,
+  // que no rebota, así no se arma un bucle.
+  if (esPanolero(usuario.rol)) redirect("/panol");
+  return usuario;
+}
+
+/**
+ * Exige acceso al pañol: la persona del pañol, o un jefe que supervisa.
+ *
+ * No pasa por `requerirUsuario` a propósito: ése rebota al pañolero hacia acá,
+ * y volver a llamarlo desde acá sería un bucle. Comparte las mismas
+ * comprobaciones de base por `sesionActiva`.
+ */
+export async function requerirPanol(): Promise<Usuario> {
+  const usuario = await sesionActiva();
+  if (!puedeVerPanol(usuario.rol)) redirect("/");
   return usuario;
 }
 
@@ -139,6 +167,17 @@ export async function usuarioDeApi(): Promise<
     };
   }
 
+  // El pañolero sólo opera el pañol; el resto de la API no es lo suyo.
+  if (esPanolero(usuario.rol)) {
+    return {
+      ok: false,
+      respuesta: Response.json(
+        { error: "Esta cuenta es del pañol." },
+        { status: 403 },
+      ),
+    };
+  }
+
   if (usuario.estado !== "ACTIVO") {
     return {
       ok: false,
@@ -147,6 +186,44 @@ export async function usuarioDeApi(): Promise<
           error:
             "Tu cuenta todavía no está habilitada. Pedile a un administrador que te dé acceso.",
         },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true, usuario };
+}
+
+/**
+ * Sesión para los endpoints del pañol: el pañolero o un jefe en adelante.
+ *
+ * No pasa por `usuarioDeApi` porque ése rechaza al pañolero; acá el pañolero
+ * es justamente quien tiene que entrar.
+ */
+export async function panolDeApi(): Promise<
+  { ok: true; usuario: Usuario } | { ok: false; respuesta: Response }
+> {
+  const usuario = await usuarioActual();
+
+  if (!usuario) {
+    return {
+      ok: false,
+      respuesta: Response.json(
+        { error: "Hay que iniciar sesión." },
+        { status: 401 },
+      ),
+    };
+  }
+
+  if (
+    usuario.tipo === "VECINO" ||
+    usuario.estado !== "ACTIVO" ||
+    !puedeVerPanol(usuario.rol)
+  ) {
+    return {
+      ok: false,
+      respuesta: Response.json(
+        { error: "Esta acción es del pañol." },
         { status: 403 },
       ),
     };

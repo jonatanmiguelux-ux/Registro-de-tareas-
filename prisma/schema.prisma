@@ -28,6 +28,12 @@ enum RolUsuario {
 
   /// Todo, incluido asignar roles y nombrar a otro administrador.
   ADMINISTRADOR
+
+  /// Fuera de la escalera: la persona del pañol. Ve SÓLO la pantalla del pañol
+  /// —el depósito central y las entregas a los móviles—, nada del resto del
+  /// sistema. Que esté último acá no la ubica en la jerarquía: `roles.ts` la
+  /// deja aparte a propósito, con permisos por chequeo explícito y no por nivel.
+  PANOLERO
 }
 
 /// Si la cuenta puede entrar.
@@ -93,6 +99,7 @@ model User {
   reclamosVecinales   ReclamoVecinal[]
   planillasCargadas   Planilla[] @relation("cargadaPor")
   planillasConfirmadas Planilla[] @relation("confirmadaPor")
+  entregas            EntregaMaterial[] @relation("entregas")
 
   creadoEn DateTime @default(now())
 
@@ -275,6 +282,7 @@ model Material {
 
   reclamos     ReclamoMaterial[]
   movimientos  MovimientoStock[]
+  entregas     EntregaMaterial[]
 
   creadoEn DateTime @default(now())
 
@@ -326,6 +334,37 @@ model MovimientoStock {
   @@index([materialId, fecha])
   @@index([tipo])
   @@map("movimientos_stock")
+}
+
+/// Entrega de material del pañol a un móvil.
+///
+/// Es el puente entre los dos niveles de stock: descuenta del pañol central y
+/// acredita al stock del móvil. Lo que un móvil tiene disponible es lo que se
+/// le entregó menos lo que consumió en sus planillas confirmadas.
+///
+/// Una entrega con cantidad negativa es una devolución del móvil al pañol: el
+/// material vuelve al depósito (sirve para corregir una entrega de más o para
+/// recuperar lo que sobró).
+model EntregaMaterial {
+  id         String   @id @default(cuid())
+  /// Número del móvil que recibe (1, 5, 6, 8…).
+  movil      Int
+  materialId String
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  cantidad   Float
+  fecha      DateTime @default(now())
+  nota       String?
+
+  /// Quién la registró. Opcional y sin cascada: el histórico sobrevive a la
+  /// baja de la cuenta.
+  entregadaPorId String?
+  entregadaPor   User?   @relation("entregas", fields: [entregadaPorId], references: [id], onDelete: SetNull)
+
+  creadoEn DateTime @default(now())
+
+  @@index([movil, fecha])
+  @@index([materialId])
+  @@map("entregas_material")
 }
 
 // ---------------------------------------------------------------------------

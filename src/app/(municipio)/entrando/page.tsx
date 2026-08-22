@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { usuarioActual } from "@/lib/sesion";
+import { usuarioActual, esPanolero } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function Entrando() {
   const usuario = await usuarioActual();
   if (!usuario) redirect("/acceso");
-  redirect(usuario.estado === "ACTIVO" ? "/" : "/acceso/pendiente");
+  if (usuario.estado !== "ACTIVO") redirect("/acceso/pendiente");
+  // El pañolero va directo a su pantalla; el resto, a cargar.
+  redirect(esPanolero(usuario.rol) ? "/panol" : "/");
 }
