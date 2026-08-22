@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import QRCode from "qrcode";
 import { requerirPanol } from "@/lib/sesion";
 import {
   stockPanol,
@@ -27,9 +29,29 @@ export default async function PaginaPanol() {
     ultimasEntregas(),
   ]);
 
+  // QR y enlace para abrir esta misma pantalla desde otro dispositivo. No es un
+  // acceso especial: lleva a /panol y, si no hay sesión, pide entrar con Google
+  // como siempre. Se arma con el dominio real de la petición.
+  const cabeceras = await headers();
+  const host =
+    cabeceras.get("x-forwarded-host") ?? cabeceras.get("host") ?? "";
+  const protocolo =
+    cabeceras.get("x-forwarded-proto") ??
+    (host.startsWith("localhost") ? "http" : "https");
+  const enlace = host ? `${protocolo}://${host}/panol` : null;
+  const qr = enlace
+    ? await QRCode.toDataURL(enlace, {
+        margin: 1,
+        width: 220,
+        errorCorrectionLevel: "M",
+      })
+    : null;
+
   return (
     <PanelPanol
       moviles={MOVILES}
+      enlace={enlace}
+      qr={qr}
       stock={stock}
       porMovil={porMovil.map((m) => ({
         movil: m.movil,

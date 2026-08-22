@@ -30,12 +30,18 @@ type GastoMovil = { movil: number; filas: FilaMovil[] };
 
 export function PanelPanol({
   moviles,
+  enlace,
+  qr,
   stock,
   porMovil,
   movimientos,
   entregas,
 }: {
   moviles: number[];
+  /** Enlace para abrir esta pantalla desde otro dispositivo, o null. */
+  enlace: string | null;
+  /** El QR del enlace como imagen (data URI), o null. */
+  qr: string | null;
   stock: FilaPanol[];
   porMovil: GastoMovil[];
   movimientos: MovimientoVista[];
@@ -44,6 +50,18 @@ export function PanelPanol({
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiarEnlace() {
+    if (!enlace) return;
+    try {
+      await navigator.clipboard.writeText(enlace);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setError("No se pudo copiar. Copiá el enlace a mano.");
+    }
+  }
 
   // Formulario de entrega a un móvil.
   const [eMovil, setEMovil] = useState(moviles[0] ?? 0);
@@ -481,6 +499,45 @@ export function PanelPanol({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* QR y enlace para abrir el Pañol desde otro dispositivo. No es un
+          acceso especial: lleva a esta pantalla y se entra con Google. */}
+      {qr && enlace && (
+        <section className="tarjeta p-4">
+          <div className="flex flex-col items-center gap-4 sm:flex-row">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qr}
+              alt="Código QR para abrir el Pañol"
+              width={128}
+              height={128}
+              className="size-32 shrink-0 rounded-lg border border-[var(--color-borde)] bg-white p-1.5"
+            />
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <h2 className="font-semibold">
+                Abrir el Pañol desde otro dispositivo
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-tinta-2)]">
+                Escaneá el código con la tablet o el celular del pañol. Va
+                directo a esta pantalla; se entra con la cuenta de Google del
+                pañolero.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <code className="break-all rounded bg-[var(--color-fondo)] px-2 py-1 text-xs text-[var(--color-tinta-2)]">
+                  {enlace}
+                </code>
+                <button
+                  type="button"
+                  onClick={copiarEnlace}
+                  className="boton-secundario min-h-0 shrink-0 px-3 py-1.5 text-xs"
+                >
+                  {copiado ? "¡Copiado!" : "Copiar enlace"}
+                </button>
+              </div>
+            </div>
+          </div>
         </section>
       )}
     </div>
